@@ -1,6 +1,5 @@
-
 import { CalendarEvent } from "@/types/calendar";
-import { addDays, addHours, setHours, startOfDay, subDays } from "date-fns";
+import { addDays, setHours, startOfDay, subDays } from "date-fns";
 
 const today = new Date();
 const startOfToday = startOfDay(today);
@@ -250,6 +249,8 @@ export const filterEventsByCategory = (categories: string[]): CalendarEvent[] =>
 };
 
 export const searchEvents = (query: string): CalendarEvent[] => {
+  if (!query) return mockEvents;
+  
   const lowerQuery = query.toLowerCase();
   return mockEvents.filter(
     event => 

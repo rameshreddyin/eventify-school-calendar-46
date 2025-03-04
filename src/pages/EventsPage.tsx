@@ -131,19 +131,39 @@ const EventsPage = () => {
     setIsEventFormOpen(true);
   };
 
-  const handleEventFormSubmit = (values: any) => {
-    // In a real application, this would send data to your backend
-    console.log("Event form submitted:", values);
-    
-    // Close the form dialog
-    setIsEventFormOpen(false);
-    
-    // Show a success message
-    toast.success(
-      isEditMode ? "Event updated successfully" : "Event created successfully"
-    );
-    
-    // In a real application, you would refresh your events here
+  const handleEditEvent = (event: CalendarEvent) => {
+    setSelectedEvent(event);
+    setIsEditMode(true);
+    setIsEventFormOpen(true);
+    setIsEventDetailsOpen(false);
+  };
+
+  const handleEventFormSubmit = async (values: any) => {
+    try {
+      // In a real application, this would update the backend
+      const updatedEvent = {
+        ...(isEditMode ? selectedEvent : {}),
+        ...values,
+        id: isEditMode ? selectedEvent?.id : crypto.randomUUID(),
+        isApproved: true,
+      };
+      
+      toast({
+        title: isEditMode ? "Event updated successfully" : "Event created successfully",
+      });
+      
+      // Close the form dialog
+      setIsEventFormOpen(false);
+      setIsEditMode(false);
+      
+      // In a real application, you would refresh your events here
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save event. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSearch = (query: string) => {
@@ -244,13 +264,17 @@ const EventsPage = () => {
           event={selectedEvent}
           isOpen={isEventDetailsOpen}
           onClose={() => setIsEventDetailsOpen(false)}
+          onEdit={handleEditEvent}
         />
 
         <EventForm
           isOpen={isEventFormOpen}
-          onClose={() => setIsEventFormOpen(false)}
+          onClose={() => {
+            setIsEventFormOpen(false);
+            setIsEditMode(false);
+          }}
           onSubmit={handleEventFormSubmit}
-          initialEvent={isEditMode ? selectedEvent || undefined : undefined}
+          initialEvent={isEditMode ? selectedEvent : undefined}
         />
       </div>
     </MainLayout>

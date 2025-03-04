@@ -1,4 +1,3 @@
-
 export type CalendarViewType = 'month' | 'week' | 'day';
 
 export type EventCategory = 
@@ -6,7 +5,14 @@ export type EventCategory =
   | 'holiday' 
   | 'meeting' 
   | 'sport' 
-  | 'administrative';
+  | 'administrative'
+  | string; // Allow custom categories
+
+export interface NotificationPreference {
+  email: boolean;
+  push: boolean;
+  reminderBefore: number; // minutes
+}
 
 export interface EventAttendee {
   id: string;
@@ -14,6 +20,7 @@ export interface EventAttendee {
   role: 'student' | 'teacher' | 'admin' | 'staff' | 'parent';
   responded: boolean;
   attending: boolean;
+  notificationPreferences?: NotificationPreference;
 }
 
 export interface CalendarEvent {

@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useState } from "react";
 import { format } from "date-fns";
 import { CalendarEvent } from "@/types/calendar";
 import {
@@ -12,20 +11,51 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, MapPin, Users } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, Bell, Check, X as XIcon, PenSquare } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { toast } from "@/hooks/use-toast";
 
 interface EventDetailsDialogProps {
   event: CalendarEvent | null;
   isOpen: boolean;
   onClose: () => void;
+  onEdit: (event: CalendarEvent) => void;
 }
 
 const EventDetailsDialog: React.FC<EventDetailsDialogProps> = ({
   event,
   isOpen,
   onClose,
+  onEdit,
 }) => {
+  const [notifyEmail, setNotifyEmail] = useState(true);
+  const [notifyPush, setNotifyPush] = useState(true);
+
   if (!event) return null;
+
+  const handleRSVP = (attending: boolean) => {
+    // In a real app, this would update the backend
+    toast({
+      title: attending ? "RSVP Confirmed" : "RSVP Declined",
+      description: attending 
+        ? "You have been added to the attendee list" 
+        : "You have declined this event",
+    });
+  };
+
+  const handleNotificationToggle = (type: 'email' | 'push') => {
+    if (type === 'email') {
+      setNotifyEmail(!notifyEmail);
+      toast({
+        title: !notifyEmail ? "Email notifications enabled" : "Email notifications disabled",
+      });
+    } else {
+      setNotifyPush(!notifyPush);
+      toast({
+        title: !notifyPush ? "Push notifications enabled" : "Push notifications disabled",
+      });
+    }
+  };
 
   const formatEventTime = (start: Date, end: Date, allDay: boolean) => {
     if (allDay) {
@@ -129,15 +159,58 @@ const EventDetailsDialog: React.FC<EventDetailsDialogProps> = ({
               </div>
             </div>
           )}
+
+          <div className="space-y-2">
+            <div className="font-medium">Notifications</div>
+            <div className="flex items-center justify-between space-x-2">
+              <div className="flex items-center space-x-2">
+                <Bell className="h-4 w-4 text-muted-foreground" />
+                <span>Email notifications</span>
+              </div>
+              <Switch
+                checked={notifyEmail}
+                onCheckedChange={() => handleNotificationToggle('email')}
+              />
+            </div>
+            <div className="flex items-center justify-between space-x-2">
+              <div className="flex items-center space-x-2">
+                <Bell className="h-4 w-4 text-muted-foreground" />
+                <span>Push notifications</span>
+              </div>
+              <Switch
+                checked={notifyPush}
+                onCheckedChange={() => handleNotificationToggle('push')}
+              />
+            </div>
+          </div>
         </div>
 
-        <DialogFooter className="flex flex-row justify-between sm:justify-between">
-          <Button variant="outline" onClick={onClose}>
-            Close
-          </Button>
-          <div className="space-x-2">
-            <Button variant="outline">Edit</Button>
-            <Button>RSVP</Button>
+        <DialogFooter>
+          <div className="flex w-full flex-col space-y-2 sm:flex-row sm:justify-between sm:space-x-2 sm:space-y-0">
+            <div className="flex space-x-2">
+              <Button variant="outline" onClick={onClose}>
+                Close
+              </Button>
+              <Button variant="outline" onClick={() => onEdit(event)}>
+                <PenSquare className="mr-2 h-4 w-4" />
+                Edit
+              </Button>
+            </div>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => handleRSVP(false)}
+              >
+                <XIcon className="mr-2 h-4 w-4" />
+                Decline
+              </Button>
+              <Button
+                onClick={() => handleRSVP(true)}
+              >
+                <Check className="mr-2 h-4 w-4" />
+                RSVP
+              </Button>
+            </div>
           </div>
         </DialogFooter>
       </DialogContent>
