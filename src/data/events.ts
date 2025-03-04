@@ -277,7 +277,7 @@ export const addOrUpdateEvent = (event: CalendarEvent): CalendarEvent => {
   }
 };
 
-// Fix error: Expected 2 arguments, but got 3
+// Fix the function signature to match the number of arguments being used
 export const updateEventAttendee = (
   eventId: string, 
   attendeeId: string, 
