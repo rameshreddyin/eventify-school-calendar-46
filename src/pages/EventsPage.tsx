@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import {
@@ -29,6 +28,7 @@ import CalendarWeekView from "@/components/calendar/CalendarWeekView";
 import CalendarDayView from "@/components/calendar/CalendarDayView";
 import EventDetailsDialog from "@/components/calendar/EventDetailsDialog";
 import EventForm from "@/components/calendar/EventForm";
+import EventCreationWizard from "@/components/calendar/EventCreationWizard";
 import CalendarToolbar from "@/components/calendar/CalendarToolbar";
 import { useToast } from "@/hooks/use-toast";
 
@@ -42,19 +42,20 @@ const EventsPage = () => {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [isEventDetailsOpen, setIsEventDetailsOpen] = useState(false);
   const [isEventFormOpen, setIsEventFormOpen] = useState(false);
+  const [isEventWizardOpen, setIsEventWizardOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [filteredEvents, setFilteredEvents] = useState<CalendarEvent[]>(mockEvents);
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [weekDays, setWeekDays] = useState<CalendarDay[]>([]);
   const [dayView, setDayView] = useState<CalendarDay | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>(mockEvents);
+  const [useWizard, setUseWizard] = useState(true);
 
   useEffect(() => {
     updateCalendarData();
   }, [currentDate, view, events, filteredEvents]);
 
   useEffect(() => {
-    // This is where you would fetch events from the backend
     setEvents(mockEvents);
   }, []);
 
@@ -69,7 +70,6 @@ const EventsPage = () => {
     } else if (view === "week") {
       const days = getWeekDays(currentDate);
       
-      // Populate days with events
       const populatedDays = days.map(day => ({
         ...day,
         events: filteredEvents.filter(event => {
@@ -142,32 +142,36 @@ const EventsPage = () => {
   const handleAddEvent = () => {
     setIsEditMode(false);
     setSelectedEvent(null);
-    setIsEventFormOpen(true);
+    if (useWizard) {
+      setIsEventWizardOpen(true);
+    } else {
+      setIsEventFormOpen(true);
+    }
   };
 
   const handleEditEvent = (event: CalendarEvent) => {
     setSelectedEvent(event);
     setIsEditMode(true);
-    setIsEventFormOpen(true);
+    if (useWizard) {
+      setIsEventWizardOpen(true);
+    } else {
+      setIsEventFormOpen(true);
+    }
     setIsEventDetailsOpen(false);
   };
 
   const handleRSVP = (eventId: string, attendeeId: string, attending: boolean) => {
     try {
-      // In a real app, this would be an API call
-      const updatedAttendee = updateEventAttendee(eventId, attendeeId, {
+      updateEventAttendee(eventId, attendeeId, {
         responded: true,
         attending
       });
       
-      if (updatedAttendee) {
-        // Update the local events state
-        setEvents([...mockEvents]);
-        
-        toast({
-          title: `You have ${attending ? 'accepted' : 'declined'} the event invitation`,
-        });
-      }
+      setEvents([...mockEvents]);
+      
+      toast({
+        title: `You have ${attending ? 'accepted' : 'declined'} the event invitation`,
+      });
     } catch (error) {
       toast({
         title: "Error",
@@ -179,7 +183,6 @@ const EventsPage = () => {
 
   const handleEventFormSubmit = async (values: any) => {
     try {
-      // Prepare event data
       const eventData: CalendarEvent = {
         ...(isEditMode && selectedEvent ? selectedEvent : {}),
         id: isEditMode && selectedEvent ? selectedEvent.id : crypto.randomUUID(),
@@ -204,36 +207,72 @@ const EventsPage = () => {
         location: values.location || undefined,
         isRecurring: values.isRecurring,
         recurrencePattern: values.isRecurring ? values.recurrencePattern : undefined,
-        createdBy: "current-user", // In a real app, this would be the current user ID
-        attendees: selectedEvent?.attendees || [],
-        isApproved: true, // In a real app, this might depend on user role
+        createdBy: "current-user",
+        attendees: (selectedEvent?.attendees || []).slice(),
+        isApproved: true
       };
 
-      // Add or update notification preferences if requested
+      if (values.addAttendees && values.attendeeRoles?.length > 0) {
+        const roleAttendees: {[key: string]: string[]} = {
+          student: ["John Smith", "David Lee", "Michael Chen"],
+          teacher: ["Emily Johnson", "Sarah Wilson"],
+          admin: ["Admin User"],
+          staff: ["Staff Member"],
+          parent: ["Robert Davis", "Parent User"]
+        };
+        
+        const attendeeIds = {
+          student: ["student1", "student2", "student3"],
+          teacher: ["teacher1", "teacher2"],
+          admin: ["admin1"],
+          staff: ["staff1"],
+          parent: ["parent1", "parent2"]
+        };
+        
+        values.attendeeRoles.forEach((role: string, index: number) => {
+          const namesList = roleAttendees[role] || [];
+          const idsList = attendeeIds[role] || [];
+          
+          namesList.forEach((name, idx) => {
+            if (idx < 2) {
+              eventData.attendees.push({
+                id: idsList[idx] || `${role}${idx+1}`,
+                name,
+                role: role as any,
+                responded: false,
+                attending: false,
+                notificationPreferences: values.notifyAttendees ? {
+                  email: true,
+                  push: true,
+                  reminderBefore: 30
+                } : undefined
+              });
+            }
+          });
+        });
+      }
+
       if (values.notifyAttendees) {
         eventData.attendees = eventData.attendees.map(attendee => ({
           ...attendee,
           notificationPreferences: attendee.notificationPreferences || {
             email: true,
             push: true,
-            reminderBefore: 30, // 30 minutes before by default
+            reminderBefore: 30
           }
         }));
       }
 
-      // Add or update the event in the mock database
       addOrUpdateEvent(eventData);
       
-      // Update the local state
       setEvents([...mockEvents]);
       
-      // Show success toast
       toast({
         title: isEditMode ? "Event updated successfully" : "Event created successfully",
       });
       
-      // Close the form dialog
       setIsEventFormOpen(false);
+      setIsEventWizardOpen(false);
       setIsEditMode(false);
     } catch (error) {
       console.error("Error saving event:", error);
@@ -247,14 +286,12 @@ const EventsPage = () => {
 
   const handleSearch = (query: string) => {
     if (query.trim() === "") {
-      // If search is cleared, apply only category filters
       setFilteredEvents(
         selectedFilters.length > 0
           ? filterEventsByCategory(selectedFilters)
           : events
       );
     } else {
-      // Apply both search and category filters
       let results = searchEvents(query);
       
       if (selectedFilters.length > 0) {
@@ -268,7 +305,6 @@ const EventsPage = () => {
   const handleFilterChange = (categories: string[]) => {
     setSelectedFilters(categories);
     
-    // Apply filters to events
     setFilteredEvents(
       categories.length > 0 ? filterEventsByCategory(categories) : events
     );
@@ -284,14 +320,31 @@ const EventsPage = () => {
     }
   };
 
+  const toggleCreationMode = () => {
+    setUseWizard(!useWizard);
+    toast({
+      title: `Using ${!useWizard ? 'step-by-step wizard' : 'simple form'} for event creation`,
+    });
+  };
+
   return (
     <MainLayout>
       <div className="container mx-auto p-6 animate-fade-in">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold">Calendar & Events</h1>
-          <p className="text-muted-foreground">
-            Manage school events and schedules in one place
-          </p>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Calendar & Events</h1>
+            <p className="text-muted-foreground">
+              Manage school events and schedules in one place
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={toggleCreationMode}
+              className="text-sm text-muted-foreground underline hover:text-foreground"
+            >
+              Switch to {useWizard ? 'simple form' : 'step-by-step wizard'}
+            </button>
+          </div>
         </div>
 
         <CalendarToolbar
@@ -347,15 +400,29 @@ const EventsPage = () => {
           onRSVP={handleRSVP}
         />
 
-        <EventForm
-          isOpen={isEventFormOpen}
-          onClose={() => {
-            setIsEventFormOpen(false);
-            setIsEditMode(false);
-          }}
-          onSubmit={handleEventFormSubmit}
-          initialEvent={isEditMode ? selectedEvent || undefined : undefined}
-        />
+        {!useWizard && (
+          <EventForm
+            isOpen={isEventFormOpen}
+            onClose={() => {
+              setIsEventFormOpen(false);
+              setIsEditMode(false);
+            }}
+            onSubmit={handleEventFormSubmit}
+            initialEvent={isEditMode ? selectedEvent || undefined : undefined}
+          />
+        )}
+
+        {useWizard && (
+          <EventCreationWizard
+            isOpen={isEventWizardOpen}
+            onClose={() => {
+              setIsEventWizardOpen(false);
+              setIsEditMode(false);
+            }}
+            onSubmit={handleEventFormSubmit}
+            initialEvent={isEditMode ? selectedEvent || undefined : undefined}
+          />
+        )}
       </div>
     </MainLayout>
   );
