@@ -1,4 +1,3 @@
-
 import { CalendarEvent } from "@/types/calendar";
 import { addDays, setHours, startOfDay, subDays } from "date-fns";
 
@@ -261,8 +260,6 @@ export const searchEvents = (query: string): CalendarEvent[] => {
   );
 };
 
-// Add new functions to handle event operations
-
 export const addOrUpdateEvent = (event: CalendarEvent): CalendarEvent => {
   const existingEventIndex = mockEvents.findIndex(e => e.id === event.id);
   
@@ -277,7 +274,6 @@ export const addOrUpdateEvent = (event: CalendarEvent): CalendarEvent => {
   }
 };
 
-// Fix the function signature to match the number of arguments being used
 export const updateEventAttendee = (
   eventId: string, 
   attendeeId: string, 
