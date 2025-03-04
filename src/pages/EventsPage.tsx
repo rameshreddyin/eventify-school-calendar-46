@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import {
@@ -14,7 +15,13 @@ import {
   populateCalendarEvents,
 } from "@/utils/calendar";
 import { CalendarEvent, CalendarViewType, CalendarMonth, CalendarDay } from "@/types/calendar";
-import { mockEvents, filterEventsByCategory, searchEvents } from "@/data/events";
+import { 
+  mockEvents, 
+  filterEventsByCategory, 
+  searchEvents, 
+  addOrUpdateEvent,
+  updateEventAttendee
+} from "@/data/events";
 import MainLayout from "@/components/layout/MainLayout";
 import CalendarHeader from "@/components/calendar/CalendarHeader";
 import CalendarMonthView from "@/components/calendar/CalendarMonthView";
@@ -23,9 +30,10 @@ import CalendarDayView from "@/components/calendar/CalendarDayView";
 import EventDetailsDialog from "@/components/calendar/EventDetailsDialog";
 import EventForm from "@/components/calendar/EventForm";
 import CalendarToolbar from "@/components/calendar/CalendarToolbar";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 const EventsPage = () => {
+  const { toast } = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<CalendarViewType>("month");
   const [calendarMonth, setCalendarMonth] = useState<CalendarMonth>(
@@ -39,10 +47,16 @@ const EventsPage = () => {
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [weekDays, setWeekDays] = useState<CalendarDay[]>([]);
   const [dayView, setDayView] = useState<CalendarDay | null>(null);
+  const [events, setEvents] = useState<CalendarEvent[]>(mockEvents);
 
   useEffect(() => {
     updateCalendarData();
-  }, [currentDate, view, filteredEvents]);
+  }, [currentDate, view, events, filteredEvents]);
+
+  useEffect(() => {
+    // This is where you would fetch events from the backend
+    setEvents(mockEvents);
+  }, []);
 
   const updateCalendarData = () => {
     if (view === "month") {
@@ -138,16 +152,82 @@ const EventsPage = () => {
     setIsEventDetailsOpen(false);
   };
 
+  const handleRSVP = (eventId: string, attendeeId: string, attending: boolean) => {
+    try {
+      // In a real app, this would be an API call
+      const updatedAttendee = updateEventAttendee(eventId, attendeeId, {
+        responded: true,
+        attending
+      });
+      
+      if (updatedAttendee) {
+        // Update the local events state
+        setEvents([...mockEvents]);
+        
+        toast({
+          title: `You have ${attending ? 'accepted' : 'declined'} the event invitation`,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update RSVP status. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleEventFormSubmit = async (values: any) => {
     try {
-      // In a real application, this would update the backend
-      const updatedEvent = {
-        ...(isEditMode ? selectedEvent : {}),
-        ...values,
-        id: isEditMode ? selectedEvent?.id : crypto.randomUUID(),
-        isApproved: true,
+      // Prepare event data
+      const eventData: CalendarEvent = {
+        ...(isEditMode && selectedEvent ? selectedEvent : {}),
+        id: isEditMode && selectedEvent ? selectedEvent.id : crypto.randomUUID(),
+        title: values.title,
+        description: values.description || "",
+        category: values.category,
+        start: new Date(
+          values.startDate.getFullYear(),
+          values.startDate.getMonth(),
+          values.startDate.getDate(),
+          values.allDay ? 0 : parseInt(values.startTime?.split(":")[0] || "0", 10),
+          values.allDay ? 0 : parseInt(values.startTime?.split(":")[1] || "0", 10)
+        ),
+        end: new Date(
+          values.endDate.getFullYear(),
+          values.endDate.getMonth(),
+          values.endDate.getDate(),
+          values.allDay ? 23 : parseInt(values.endTime?.split(":")[0] || "0", 10),
+          values.allDay ? 59 : parseInt(values.endTime?.split(":")[1] || "0", 10)
+        ),
+        allDay: values.allDay,
+        location: values.location || undefined,
+        isRecurring: values.isRecurring,
+        recurrencePattern: values.isRecurring ? values.recurrencePattern : undefined,
+        createdBy: "current-user", // In a real app, this would be the current user ID
+        attendees: selectedEvent?.attendees || [],
+        isApproved: true, // In a real app, this might depend on user role
       };
+
+      // Add or update notification preferences if requested
+      if (values.notifyAttendees) {
+        eventData.attendees = eventData.attendees.map(attendee => ({
+          ...attendee,
+          notificationPreferences: attendee.notificationPreferences || {
+            email: true,
+            push: true,
+            reminderBefore: 30, // 30 minutes before by default
+          }
+        }));
+      }
+
+      // Add or update the event in the mock database
+      addOrUpdateEvent(eventData);
       
+      // Update the local state
+      setEvents([...mockEvents]);
+      
+      // Show success toast
       toast({
         title: isEditMode ? "Event updated successfully" : "Event created successfully",
       });
@@ -155,9 +235,8 @@ const EventsPage = () => {
       // Close the form dialog
       setIsEventFormOpen(false);
       setIsEditMode(false);
-      
-      // In a real application, you would refresh your events here
     } catch (error) {
+      console.error("Error saving event:", error);
       toast({
         title: "Error",
         description: "Failed to save event. Please try again.",
@@ -172,7 +251,7 @@ const EventsPage = () => {
       setFilteredEvents(
         selectedFilters.length > 0
           ? filterEventsByCategory(selectedFilters)
-          : mockEvents
+          : events
       );
     } else {
       // Apply both search and category filters
@@ -191,7 +270,7 @@ const EventsPage = () => {
     
     // Apply filters to events
     setFilteredEvents(
-      categories.length > 0 ? filterEventsByCategory(categories) : mockEvents
+      categories.length > 0 ? filterEventsByCategory(categories) : events
     );
   };
 
@@ -265,6 +344,7 @@ const EventsPage = () => {
           isOpen={isEventDetailsOpen}
           onClose={() => setIsEventDetailsOpen(false)}
           onEdit={handleEditEvent}
+          onRSVP={handleRSVP}
         />
 
         <EventForm
@@ -274,7 +354,7 @@ const EventsPage = () => {
             setIsEditMode(false);
           }}
           onSubmit={handleEventFormSubmit}
-          initialEvent={isEditMode ? selectedEvent : undefined}
+          initialEvent={isEditMode ? selectedEvent || undefined : undefined}
         />
       </div>
     </MainLayout>

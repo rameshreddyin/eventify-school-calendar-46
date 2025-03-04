@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,6 +10,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,14 +39,17 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { CalendarIcon, Clock } from "lucide-react";
+import { CalendarIcon, Clock, PlusCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
+// Modified schema to allow custom categories
 const formSchema = z.object({
   title: z.string().min(2, {
     message: "Title must be at least 2 characters.",
   }),
   description: z.string().optional(),
-  category: z.enum(["exam", "holiday", "meeting", "sport", "administrative"]),
+  category: z.string(), // Changed to string to allow custom categories
+  customCategory: z.string().optional(),
   startDate: z.date(),
   endDate: z.date(),
   startTime: z.string().optional(),
@@ -54,6 +58,7 @@ const formSchema = z.object({
   location: z.string().optional(),
   isRecurring: z.boolean().default(false),
   recurrencePattern: z.enum(["daily", "weekly", "monthly", "yearly"]).optional(),
+  notifyAttendees: z.boolean().default(false),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -65,19 +70,29 @@ interface EventFormProps {
   initialEvent?: CalendarEvent;
 }
 
+const predefinedCategories = ["exam", "holiday", "meeting", "sport", "administrative"];
+
 const EventForm: React.FC<EventFormProps> = ({
   isOpen,
   onClose,
   onSubmit,
   initialEvent,
 }) => {
+  const { toast } = useToast();
+  const [showCustomCategoryInput, setShowCustomCategoryInput] = useState(false);
+  
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: initialEvent
       ? {
           title: initialEvent.title,
           description: initialEvent.description,
-          category: initialEvent.category,
+          category: predefinedCategories.includes(initialEvent.category) 
+            ? initialEvent.category 
+            : "custom",
+          customCategory: !predefinedCategories.includes(initialEvent.category) 
+            ? initialEvent.category 
+            : "",
           startDate: new Date(initialEvent.start),
           endDate: new Date(initialEvent.end),
           startTime: initialEvent.allDay ? undefined : format(new Date(initialEvent.start), "HH:mm"),
@@ -86,11 +101,13 @@ const EventForm: React.FC<EventFormProps> = ({
           location: initialEvent.location,
           isRecurring: initialEvent.isRecurring,
           recurrencePattern: initialEvent.recurrencePattern,
+          notifyAttendees: initialEvent.attendees.some(a => a.notificationPreferences !== undefined),
         }
       : {
           title: "",
           description: "",
-          category: "meeting" as EventCategory,
+          category: "meeting",
+          customCategory: "",
           startDate: new Date(),
           endDate: new Date(),
           startTime: "09:00",
@@ -99,14 +116,35 @@ const EventForm: React.FC<EventFormProps> = ({
           location: "",
           isRecurring: false,
           recurrencePattern: undefined,
+          notifyAttendees: false,
         },
   });
 
   const allDay = form.watch("allDay");
   const isRecurring = form.watch("isRecurring");
+  const categoryValue = form.watch("category");
+
+  React.useEffect(() => {
+    if (categoryValue === "custom") {
+      setShowCustomCategoryInput(true);
+    } else {
+      setShowCustomCategoryInput(false);
+    }
+  }, [categoryValue]);
 
   const handleSubmit = (values: FormValues) => {
-    onSubmit(values);
+    // Prepare the values for submission
+    const finalValues = { ...values };
+    
+    // If custom category is selected, use the custom category value
+    if (values.category === "custom" && values.customCategory) {
+      finalValues.category = values.customCategory;
+    }
+    
+    // Remove the customCategory field before submitting
+    delete finalValues.customCategory;
+    
+    onSubmit(finalValues);
   };
 
   return (
@@ -116,6 +154,11 @@ const EventForm: React.FC<EventFormProps> = ({
           <DialogTitle>
             {initialEvent ? "Edit Event" : "Create Event"}
           </DialogTitle>
+          <DialogDescription>
+            {initialEvent 
+              ? "Make changes to the event details below." 
+              : "Fill in the details to create a new event."}
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -162,7 +205,7 @@ const EventForm: React.FC<EventFormProps> = ({
                     <FormLabel>Category</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -175,6 +218,12 @@ const EventForm: React.FC<EventFormProps> = ({
                         <SelectItem value="meeting">Meeting</SelectItem>
                         <SelectItem value="sport">Sports & Cultural</SelectItem>
                         <SelectItem value="administrative">Administrative</SelectItem>
+                        <SelectItem value="custom">
+                          <div className="flex items-center">
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Custom Category
+                          </div>
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -182,6 +231,44 @@ const EventForm: React.FC<EventFormProps> = ({
                 )}
               />
 
+              {showCustomCategoryInput && (
+                <FormField
+                  control={form.control}
+                  name="customCategory"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Custom Category</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Enter category name" 
+                          {...field} 
+                          value={field.value || ""} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {!showCustomCategoryInput && (
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Location" {...field} value={field.value || ""} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+
+            {showCustomCategoryInput && (
               <FormField
                 control={form.control}
                 name="location"
@@ -195,7 +282,7 @@ const EventForm: React.FC<EventFormProps> = ({
                   </FormItem>
                 )}
               />
-            </div>
+            )}
 
             <FormField
               control={form.control}
@@ -364,7 +451,7 @@ const EventForm: React.FC<EventFormProps> = ({
                     <FormLabel>Recurrence Pattern</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -383,6 +470,27 @@ const EventForm: React.FC<EventFormProps> = ({
                 )}
               />
             )}
+
+            <FormField
+              control={form.control}
+              name="notifyAttendees"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base">Notify Attendees</FormLabel>
+                    <FormDescription>
+                      Send email and push notifications to attendees
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose}>

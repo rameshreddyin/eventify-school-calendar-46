@@ -1,3 +1,4 @@
+
 import { CalendarEvent } from "@/types/calendar";
 import { addDays, setHours, startOfDay, subDays } from "date-fns";
 
@@ -258,4 +259,86 @@ export const searchEvents = (query: string): CalendarEvent[] => {
       event.description.toLowerCase().includes(lowerQuery) ||
       (event.location && event.location.toLowerCase().includes(lowerQuery))
   );
+};
+
+// Add new functions to handle event operations
+
+export const addOrUpdateEvent = (event: CalendarEvent): CalendarEvent => {
+  const existingEventIndex = mockEvents.findIndex(e => e.id === event.id);
+  
+  if (existingEventIndex >= 0) {
+    // Update existing event
+    mockEvents[existingEventIndex] = event;
+    return event;
+  } else {
+    // Add new event
+    mockEvents.push(event);
+    return event;
+  }
+};
+
+export const updateEventAttendee = (
+  eventId: string, 
+  attendeeId: string, 
+  updates: Partial<CalendarEvent['attendees'][0]>
+): CalendarEvent | undefined => {
+  const event = getEventById(eventId);
+  
+  if (!event) return undefined;
+  
+  const attendeeIndex = event.attendees.findIndex(a => a.id === attendeeId);
+  
+  if (attendeeIndex >= 0) {
+    event.attendees[attendeeIndex] = {
+      ...event.attendees[attendeeIndex],
+      ...updates
+    };
+    
+    // Update the event in the mockEvents array
+    const eventIndex = mockEvents.findIndex(e => e.id === eventId);
+    if (eventIndex >= 0) {
+      mockEvents[eventIndex] = event;
+    }
+    
+    return event;
+  }
+  
+  return undefined;
+};
+
+export const deleteEvent = (id: string): boolean => {
+  const initialLength = mockEvents.length;
+  const newEvents = mockEvents.filter(event => event.id !== id);
+  
+  // If the array length changed, we successfully removed an event
+  if (newEvents.length < initialLength) {
+    // Replace the mockEvents array with the filtered array
+    mockEvents.length = 0;
+    mockEvents.push(...newEvents);
+    return true;
+  }
+  
+  return false;
+};
+
+export const addAttendeeToEvent = (
+  eventId: string,
+  attendee: CalendarEvent['attendees'][0]
+): CalendarEvent | undefined => {
+  const event = getEventById(eventId);
+  
+  if (!event) return undefined;
+  
+  // Check if attendee already exists
+  if (!event.attendees.some(a => a.id === attendee.id)) {
+    event.attendees.push(attendee);
+    
+    // Update the event in the mockEvents array
+    const eventIndex = mockEvents.findIndex(e => e.id === eventId);
+    if (eventIndex >= 0) {
+      mockEvents[eventIndex] = event;
+    }
+  }
+  
+  return event;
 };
