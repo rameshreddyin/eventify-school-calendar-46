@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import {
@@ -24,7 +23,7 @@ import CalendarDayView from "@/components/calendar/CalendarDayView";
 import EventDetailsDialog from "@/components/calendar/EventDetailsDialog";
 import EventForm from "@/components/calendar/EventForm";
 import CalendarToolbar from "@/components/calendar/CalendarToolbar";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "@/hooks/use-toast";
 
 const EventsPage = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
