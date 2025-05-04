@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CalendarEvent, EventCategory } from "@/types/calendar";
+import { CalendarEvent } from "@/types/calendar";
 import {
   Dialog,
   DialogContent,
@@ -39,17 +39,16 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { CalendarIcon, Clock, PlusCircle } from "lucide-react";
+import { CalendarIcon, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-// Modified schema to allow custom categories
+// Form schema for event creation/editing
 const formSchema = z.object({
   title: z.string().min(2, {
     message: "Title must be at least 2 characters.",
   }),
   description: z.string().optional(),
-  category: z.string(), // Changed to string to allow custom categories
-  customCategory: z.string().optional(),
+  category: z.string(),
   startDate: z.date(),
   endDate: z.date(),
   startTime: z.string().optional(),
@@ -70,8 +69,6 @@ interface EventFormProps {
   initialEvent?: CalendarEvent;
 }
 
-const predefinedCategories = ["exam", "holiday", "meeting", "sport", "administrative"];
-
 const EventForm: React.FC<EventFormProps> = ({
   isOpen,
   onClose,
@@ -79,7 +76,6 @@ const EventForm: React.FC<EventFormProps> = ({
   initialEvent,
 }) => {
   const { toast } = useToast();
-  const [showCustomCategoryInput, setShowCustomCategoryInput] = useState(false);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -87,12 +83,7 @@ const EventForm: React.FC<EventFormProps> = ({
       ? {
           title: initialEvent.title,
           description: initialEvent.description,
-          category: predefinedCategories.includes(initialEvent.category) 
-            ? initialEvent.category 
-            : "custom",
-          customCategory: !predefinedCategories.includes(initialEvent.category) 
-            ? initialEvent.category 
-            : "",
+          category: initialEvent.category,
           startDate: new Date(initialEvent.start),
           endDate: new Date(initialEvent.end),
           startTime: initialEvent.allDay ? undefined : format(new Date(initialEvent.start), "HH:mm"),
@@ -107,7 +98,6 @@ const EventForm: React.FC<EventFormProps> = ({
           title: "",
           description: "",
           category: "meeting",
-          customCategory: "",
           startDate: new Date(),
           endDate: new Date(),
           startTime: "09:00",
@@ -122,34 +112,15 @@ const EventForm: React.FC<EventFormProps> = ({
 
   const allDay = form.watch("allDay");
   const isRecurring = form.watch("isRecurring");
-  const categoryValue = form.watch("category");
-
-  React.useEffect(() => {
-    if (categoryValue === "custom") {
-      setShowCustomCategoryInput(true);
-    } else {
-      setShowCustomCategoryInput(false);
-    }
-  }, [categoryValue]);
 
   const handleSubmit = (values: FormValues) => {
-    // Prepare the values for submission
-    const finalValues = { ...values };
-    
-    // If custom category is selected, use the custom category value
-    if (values.category === "custom" && values.customCategory) {
-      finalValues.category = values.customCategory;
-    }
-    
-    // Remove the customCategory field before submitting
-    delete finalValues.customCategory;
-    
-    onSubmit(finalValues);
+    onSubmit(values);
+    form.reset();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
           <DialogTitle>
             {initialEvent ? "Edit Event" : "Create Event"}
@@ -196,93 +167,33 @@ const EventForm: React.FC<EventFormProps> = ({
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="exam">Exam</SelectItem>
-                        <SelectItem value="holiday">Holiday</SelectItem>
-                        <SelectItem value="meeting">Meeting</SelectItem>
-                        <SelectItem value="sport">Sports & Cultural</SelectItem>
-                        <SelectItem value="administrative">Administrative</SelectItem>
-                        <SelectItem value="custom">
-                          <div className="flex items-center">
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Custom Category
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {showCustomCategoryInput && (
-                <FormField
-                  control={form.control}
-                  name="customCategory"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Custom Category</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Enter category name" 
-                          {...field} 
-                          value={field.value || ""} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-
-              {!showCustomCategoryInput && (
-                <FormField
-                  control={form.control}
-                  name="location"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Location</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Location" {...field} value={field.value || ""} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-            </div>
-
-            {showCustomCategoryInput && (
-              <FormField
-                control={form.control}
-                name="location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Location</FormLabel>
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                  >
                     <FormControl>
-                      <Input placeholder="Location" {...field} value={field.value || ""} />
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+                    <SelectContent>
+                      <SelectItem value="exam">Exam</SelectItem>
+                      <SelectItem value="holiday">Holiday</SelectItem>
+                      <SelectItem value="meeting">Meeting</SelectItem>
+                      <SelectItem value="sport">Sports & Cultural</SelectItem>
+                      <SelectItem value="administrative">Administrative</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
@@ -420,6 +331,20 @@ const EventForm: React.FC<EventFormProps> = ({
                 />
               </div>
             )}
+
+            <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Location</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Location" {...field} value={field.value || ""} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
