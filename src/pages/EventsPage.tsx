@@ -22,11 +22,12 @@ import EventForm from "@/components/calendar/EventForm";
 import EventDetailsDialog from "@/components/calendar/EventDetailsDialog";
 import { generateCalendarMonth, generateCalendarDays } from "@/utils/calendar";
 import {
-  mockEvents,
-  filterEventsByCategory,
-  searchEvents,
-  updateEventAttendee,
-  addOrUpdateEvent,
+  events,
+  getEventsForDateRange,
+  getEventById,
+  addEvent, 
+  updateEvent,
+  deleteEvent,
 } from "@/data/events";
 import { CalendarEvent, CalendarViewType } from "@/types/calendar";
 import { v4 as uuidv4 } from "uuid";
@@ -40,7 +41,7 @@ const EventsPage: React.FC = () => {
   const [calendarTitle, setCalendarTitle] = useState("");
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredEvents, setFilteredEvents] = useState<CalendarEvent[]>(mockEvents);
+  const [filteredEvents, setFilteredEvents] = useState<CalendarEvent[]>(events);
   const [showEventForm, setShowEventForm] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [showEventDetails, setShowEventDetails] = useState(false);
@@ -77,20 +78,27 @@ const EventsPage: React.FC = () => {
   };
 
   const updateFilteredEvents = () => {
-    // Apply filters and search query
-    let events = mockEvents;
+    // Get events for the current view period
+    let eventsToShow = events;
     
     // Apply category filters if any are selected
     if (selectedFilters.length > 0) {
-      events = filterEventsByCategory(selectedFilters);
+      eventsToShow = eventsToShow.filter(event => 
+        selectedFilters.includes(event.category)
+      );
     }
     
     // Apply search query if it exists
     if (searchQuery) {
-      events = searchEvents(searchQuery);
+      const query = searchQuery.toLowerCase();
+      eventsToShow = eventsToShow.filter(event => 
+        event.title.toLowerCase().includes(query) ||
+        event.description.toLowerCase().includes(query) ||
+        (event.location && event.location.toLowerCase().includes(query))
+      );
     }
     
-    setFilteredEvents(events);
+    setFilteredEvents(eventsToShow);
   };
 
   // Navigation handlers
@@ -176,7 +184,11 @@ const EventsPage: React.FC = () => {
     }
 
     // Save the event
-    addOrUpdateEvent(eventData);
+    if (selectedEvent) {
+      updateEvent(eventData.id, eventData);
+    } else {
+      addEvent(eventData);
+    }
     
     // Show toast notification
     toast({
@@ -201,22 +213,31 @@ const EventsPage: React.FC = () => {
   };
 
   const handleRSVPEvent = (eventId: string, attendeeId: string, attending: boolean) => {
-    updateEventAttendee(eventId, attendeeId, {
-      responded: true,
-      attending
-    });
-    
-    // Show toast notification
-    toast({
-      title: attending ? "You're going!" : "You declined",
-      description: attending 
-        ? "You've confirmed your attendance" 
-        : "You've declined this event"
-    });
-    
-    // Close the details dialog
-    setShowEventDetails(false);
-    updateFilteredEvents();
+    // Get the event first
+    const event = getEventById(eventId);
+    if (event) {
+      // Find the attendee
+      const updatedAttendees = event.attendees.map(attendee => 
+        attendee.id === attendeeId
+          ? { ...attendee, responded: true, attending }
+          : attendee
+      );
+      
+      // Update the event with the new attendees
+      updateEvent(eventId, { attendees: updatedAttendees });
+      
+      // Show toast notification
+      toast({
+        title: attending ? "You're going!" : "You declined",
+        description: attending 
+          ? "You've confirmed your attendance" 
+          : "You've declined this event"
+      });
+      
+      // Close the details dialog
+      setShowEventDetails(false);
+      updateFilteredEvents();
+    }
   };
 
   const handleDateClick = (date: Date) => {
