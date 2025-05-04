@@ -1,341 +1,251 @@
-import { CalendarEvent } from "@/types/calendar";
-import { addDays, setHours, startOfDay, subDays } from "date-fns";
+import { v4 as uuidv4 } from 'uuid';
+import { addDays, addHours, addMonths, format, setHours, startOfDay, subDays } from 'date-fns';
+import { CalendarEvent, EventAttendee, EventCategory } from '@/types/calendar';
 
-const today = new Date();
-const startOfToday = startOfDay(today);
-
-export const mockEvents: CalendarEvent[] = [
-  {
-    id: "1",
-    title: "Mid-Term Exams",
-    description: "Math and Science mid-term examinations",
-    category: "exam",
-    start: addDays(setHours(startOfToday, 9), 2),
-    end: addDays(setHours(startOfToday, 12), 2),
-    allDay: false,
-    location: "Main Building, Rooms 101-105",
-    createdBy: "admin1",
-    isRecurring: false,
-    attendees: [
-      {
-        id: "student1",
-        name: "John Smith",
-        role: "student",
-        responded: true,
-        attending: true,
-      },
-      {
-        id: "teacher1",
-        name: "Emily Johnson",
-        role: "teacher",
-        responded: true,
-        attending: true,
-      },
-    ],
-    isApproved: true,
-    classIds: ["class1", "class2"],
-  },
-  {
-    id: "2",
-    title: "Spring Break",
-    description: "School closed for spring break",
-    category: "holiday",
-    start: addDays(startOfToday, 5),
-    end: addDays(startOfToday, 12),
-    allDay: true,
-    createdBy: "admin1",
-    isRecurring: false,
-    attendees: [],
-    isApproved: true,
-  },
-  {
-    id: "3",
-    title: "Parent-Teacher Conference",
-    description: "Quarterly parent-teacher meeting",
-    category: "meeting",
-    start: addDays(setHours(startOfToday, 14), 3),
-    end: addDays(setHours(startOfToday, 18), 3),
-    allDay: false,
-    location: "School Auditorium",
-    createdBy: "admin2",
-    isRecurring: false,
-    attendees: [
-      {
-        id: "teacher1",
-        name: "Emily Johnson",
-        role: "teacher",
-        responded: true,
-        attending: true,
-      },
-      {
-        id: "parent1",
-        name: "Robert Davis",
-        role: "parent",
-        responded: false,
-        attending: false,
-      },
-    ],
-    isApproved: true,
-  },
-  {
-    id: "4",
-    title: "Basketball Tournament",
-    description: "Inter-school basketball championship",
-    category: "sport",
-    start: addDays(setHours(startOfToday, 10), 7),
-    end: addDays(setHours(startOfToday, 16), 7),
-    allDay: false,
-    location: "School Gymnasium",
-    createdBy: "teacher3",
-    isRecurring: false,
-    attendees: [
-      {
-        id: "student2",
-        name: "Michael Chen",
-        role: "student",
-        responded: true,
-        attending: true,
-      },
-      {
-        id: "teacher2",
-        name: "Sarah Wilson",
-        role: "teacher",
-        responded: true,
-        attending: true,
-      },
-    ],
-    isApproved: true,
-    classIds: ["class3", "class4"],
-  },
-  {
-    id: "5",
-    title: "Tuition Fee Due Date",
-    description: "Last date for quarterly tuition fee payment",
-    category: "administrative",
-    start: addDays(startOfToday, 10),
-    end: addDays(startOfToday, 10),
-    allDay: true,
-    createdBy: "admin1",
-    isRecurring: false,
-    attendees: [],
-    isApproved: true,
-  },
-  {
-    id: "6",
-    title: "Science Fair",
-    description: "Annual science project exhibition",
-    category: "meeting",
-    start: subDays(setHours(startOfToday, 9), 1),
-    end: subDays(setHours(startOfToday, 15), 1),
-    allDay: false,
-    location: "School Hall",
-    createdBy: "teacher1",
-    isRecurring: false,
-    attendees: [
-      {
-        id: "student1",
-        name: "John Smith",
-        role: "student",
-        responded: true,
-        attending: true,
-      },
-      {
-        id: "student3",
-        name: "David Lee",
-        role: "student",
-        responded: true,
-        attending: true,
-      },
-    ],
-    isApproved: true,
-    classIds: ["class1", "class2", "class3"],
-  },
-  {
-    id: "7",
-    title: "Faculty Meeting",
-    description: "Monthly staff coordination meeting",
-    category: "meeting",
-    start: addDays(setHours(startOfToday, 15), 1),
-    end: addDays(setHours(startOfToday, 16, 30), 1),
-    allDay: false,
-    location: "Conference Room",
-    createdBy: "admin2",
-    isRecurring: true,
-    recurrencePattern: "monthly",
-    attendees: [
-      {
-        id: "teacher1",
-        name: "Emily Johnson",
-        role: "teacher",
-        responded: true,
-        attending: true,
-      },
-      {
-        id: "teacher2",
-        name: "Sarah Wilson",
-        role: "teacher",
-        responded: false,
-        attending: false,
-      },
-    ],
-    isApproved: true,
-  },
-  {
-    id: "8",
-    title: "Final Exams",
-    description: "End of semester examinations",
-    category: "exam",
-    start: addDays(startOfToday, 14),
-    end: addDays(startOfToday, 18),
-    allDay: true,
-    location: "Multiple Classrooms",
-    createdBy: "admin1",
-    isRecurring: false,
-    attendees: [],
-    isApproved: true,
-  },
-  {
-    id: "9",
-    title: "Report Card Distribution",
-    description: "Semester report cards will be handed out",
-    category: "administrative",
-    start: addDays(setHours(startOfToday, 13), 20),
-    end: addDays(setHours(startOfToday, 16), 20),
-    allDay: false,
-    location: "Classrooms",
-    createdBy: "admin2",
-    isRecurring: false,
-    attendees: [],
-    isApproved: true,
-  },
-  {
-    id: "10",
-    title: "Cultural Day",
-    description: "Annual cultural performances and exhibitions",
-    category: "sport",
-    start: addDays(startOfToday, -3),
-    end: addDays(startOfToday, -3),
-    allDay: true,
-    location: "School Auditorium and Grounds",
-    createdBy: "teacher4",
-    isRecurring: false,
-    attendees: [],
-    isApproved: true,
-  },
-  {
-    id: "11",
-    title: "Career Guidance Workshop",
-    description: "Workshop for senior students on career planning",
-    category: "meeting",
-    start: addDays(setHours(startOfToday, 10), 4),
-    end: addDays(setHours(startOfToday, 14), 4),
-    allDay: false,
-    location: "School Library",
-    createdBy: "teacher5",
-    isRecurring: false,
-    attendees: [],
-    isApproved: true,
-    classIds: ["class5", "class6"],
-  },
-];
-
-export const getEventById = (id: string): CalendarEvent | undefined => {
-  return mockEvents.find(event => event.id === id);
+// Generate a random time between 9 AM and 5 PM
+const randomBusinessHour = (date: Date): Date => {
+  const hours = Math.floor(Math.random() * 8) + 9; // 9 AM to 5 PM
+  return setHours(date, hours);
 };
 
-export const filterEventsByCategory = (categories: string[]): CalendarEvent[] => {
-  if (categories.length === 0) return mockEvents;
-  return mockEvents.filter(event => categories.includes(event.category));
+// Generate a random duration between 30 minutes and 2 hours (in milliseconds)
+const randomDuration = (): number => {
+  return (Math.floor(Math.random() * 4) + 1) * 30 * 60 * 1000;
 };
 
-export const searchEvents = (query: string): CalendarEvent[] => {
-  if (!query) return mockEvents;
+// Generate a random event category
+const randomCategory = (): EventCategory => {
+  const categories: EventCategory[] = ['exam', 'holiday', 'meeting', 'sport', 'administrative'];
+  return categories[Math.floor(Math.random() * categories.length)];
+};
+
+// Generate a random boolean with a given probability
+const randomBoolean = (probability = 0.5): boolean => {
+  return Math.random() < probability;
+};
+
+// Generate a random attendee
+const generateAttendee = (id: number): EventAttendee => {
+  const roles: EventAttendee['role'][] = ['student', 'teacher', 'admin', 'staff', 'parent'];
+  const role = roles[Math.floor(Math.random() * roles.length)];
   
-  const lowerQuery = query.toLowerCase();
-  return mockEvents.filter(
-    event => 
-      event.title.toLowerCase().includes(lowerQuery) || 
-      event.description.toLowerCase().includes(lowerQuery) ||
-      (event.location && event.location.toLowerCase().includes(lowerQuery))
-  );
+  return {
+    id: `attendee-${id}`,
+    name: `${role.charAt(0).toUpperCase() + role.slice(1)} ${id}`,
+    role,
+    responded: randomBoolean(0.7),
+    attending: randomBoolean(0.8),
+    notificationPreferences: {
+      email: randomBoolean(0.9),
+      push: randomBoolean(0.7),
+    },
+  };
 };
 
-export const addOrUpdateEvent = (event: CalendarEvent): CalendarEvent => {
-  const existingEventIndex = mockEvents.findIndex(e => e.id === event.id);
+// Generate random attendees
+const generateAttendees = (count: number): EventAttendee[] => {
+  return Array.from({ length: count }, (_, i) => generateAttendee(i + 1));
+};
+
+// Generate a single event
+const generateEvent = (id: number, date: Date): CalendarEvent => {
+  const start = randomBusinessHour(date);
+  const end = new Date(start.getTime() + randomDuration());
+  const isAllDay = randomBoolean(0.2);
+  const category = randomCategory();
+  const isRecurring = randomBoolean(0.3);
   
-  if (existingEventIndex >= 0) {
-    // Update existing event
-    mockEvents[existingEventIndex] = event;
-    return event;
-  } else {
-    // Add new event
-    mockEvents.push(event);
-    return event;
+  let recurrencePattern: CalendarEvent['recurrencePattern'] = undefined;
+  if (isRecurring) {
+    const patterns: NonNullable<CalendarEvent['recurrencePattern']>[] = ['daily', 'weekly', 'monthly', 'yearly'];
+    recurrencePattern = patterns[Math.floor(Math.random() * patterns.length)];
   }
+  
+  return {
+    id: `event-${id}`,
+    title: `${category.charAt(0).toUpperCase() + category.slice(1)} Event ${id}`,
+    description: `This is a sample ${category} event with ID ${id}. This description provides details about the event.`,
+    category,
+    start: isAllDay ? startOfDay(start) : start,
+    end: isAllDay ? startOfDay(end) : end,
+    allDay: isAllDay,
+    location: randomBoolean(0.7) ? `Room ${Math.floor(Math.random() * 100) + 100}` : undefined,
+    createdBy: `user-${Math.floor(Math.random() * 5) + 1}`,
+    isRecurring,
+    recurrencePattern,
+    attendees: generateAttendees(Math.floor(Math.random() * 5) + 1),
+    isApproved: randomBoolean(0.9),
+    classIds: randomBoolean(0.6) ? [`class-${Math.floor(Math.random() * 10) + 1}`] : undefined,
+  };
 };
 
-export const updateEventAttendee = (
-  eventId: string, 
-  attendeeId: string, 
-  updates: Partial<CalendarEvent['attendees'][0]>
-): CalendarEvent | undefined => {
-  const event = getEventById(eventId);
+// Generate events for a specific date range
+const generateEventsForDateRange = (
+  startDate: Date,
+  endDate: Date,
+  count: number
+): CalendarEvent[] => {
+  const events: CalendarEvent[] = [];
+  const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
   
-  if (!event) return undefined;
+  for (let i = 0; i < count; i++) {
+    const randomDayOffset = Math.floor(Math.random() * daysDiff);
+    const eventDate = addDays(startDate, randomDayOffset);
+    events.push(generateEvent(i + 1, eventDate));
+  }
   
-  const attendeeIndex = event.attendees.findIndex(a => a.id === attendeeId);
+  return events;
+};
+
+// Generate some predefined events for the current month
+const generatePredefinedEvents = (): CalendarEvent[] => {
+  const today = new Date();
+  const events: CalendarEvent[] = [];
   
-  if (attendeeIndex >= 0) {
-    event.attendees[attendeeIndex] = {
-      ...event.attendees[attendeeIndex],
-      ...updates
-    };
-    
-    // Update the event in the mockEvents array
-    const eventIndex = mockEvents.findIndex(e => e.id === eventId);
-    if (eventIndex >= 0) {
-      mockEvents[eventIndex] = event;
+  // Add a staff meeting every Monday
+  for (let i = 0; i < 4; i++) {
+    const meetingDate = addDays(today, (i * 7) - today.getDay() + 1); // Next Monday + i weeks
+    if (meetingDate.getMonth() === today.getMonth()) {
+      events.push({
+        id: uuidv4(),
+        title: 'Weekly Staff Meeting',
+        description: 'Regular staff meeting to discuss ongoing projects and issues.',
+        category: 'meeting',
+        start: setHours(meetingDate, 9), // 9 AM
+        end: setHours(meetingDate, 10), // 10 AM
+        allDay: false,
+        location: 'Conference Room A',
+        createdBy: 'admin-1',
+        isRecurring: true,
+        recurrencePattern: 'weekly',
+        attendees: generateAttendees(8),
+        isApproved: true,
+        classIds: undefined,
+      });
     }
-    
-    return event;
   }
   
+  // Add a school holiday
+  const holidayDate = addDays(today, 15);
+  events.push({
+    id: uuidv4(),
+    title: 'School Holiday',
+    description: 'School closed for national holiday.',
+    category: 'holiday',
+    start: startOfDay(holidayDate),
+    end: startOfDay(holidayDate),
+    allDay: true,
+    createdBy: 'admin-1',
+    isRecurring: false,
+    attendees: [],
+    isApproved: true,
+  });
+  
+  // Add an exam period
+  const examStartDate = addDays(today, 10);
+  for (let i = 0; i < 5; i++) {
+    const examDate = addDays(examStartDate, i);
+    events.push({
+      id: uuidv4(),
+      title: `Final Exam - Subject ${i + 1}`,
+      description: `Final examination for Subject ${i + 1}.`,
+      category: 'exam',
+      start: setHours(examDate, 10), // 10 AM
+      end: setHours(examDate, 12), // 12 PM
+      allDay: false,
+      location: `Exam Hall ${String.fromCharCode(65 + i)}`, // Hall A, B, C, etc.
+      createdBy: 'admin-2',
+      isRecurring: false,
+      attendees: generateAttendees(15),
+      isApproved: true,
+      classIds: [`class-${i + 1}`],
+    });
+  }
+  
+  // Add a sports event
+  const sportsDate = addDays(today, 5);
+  events.push({
+    id: uuidv4(),
+    title: 'Inter-School Basketball Tournament',
+    description: 'Annual basketball tournament between local schools.',
+    category: 'sport',
+    start: setHours(sportsDate, 14), // 2 PM
+    end: setHours(sportsDate, 17), // 5 PM
+    allDay: false,
+    location: 'School Gymnasium',
+    createdBy: 'teacher-3',
+    isRecurring: false,
+    attendees: generateAttendees(20),
+    isApproved: true,
+    classIds: ['class-5', 'class-6', 'class-7'],
+  });
+  
+  return events;
+};
+
+// Generate events for the current month and the next month
+const today = new Date();
+const startOfCurrentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+const endOfNextMonth = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+
+// Generate random events
+const randomEvents = generateEventsForDateRange(
+  startOfCurrentMonth,
+  endOfNextMonth,
+  30
+);
+
+// Generate predefined events
+const predefinedEvents = generatePredefinedEvents();
+
+// Combine all events
+export const events: CalendarEvent[] = [...randomEvents, ...predefinedEvents];
+
+// Function to get events for a specific date range
+export const getEventsForDateRange = (
+  start: Date,
+  end: Date
+): CalendarEvent[] => {
+  return events.filter((event) => {
+    const eventStart = new Date(event.start);
+    const eventEnd = new Date(event.end);
+    return eventStart >= start && eventStart <= end || 
+           eventEnd >= start && eventEnd <= end ||
+           eventStart <= start && eventEnd >= end;
+  });
+};
+
+// Function to get an event by ID
+export const getEventById = (id: string): CalendarEvent | undefined => {
+  return events.find((event) => event.id === id);
+};
+
+// Function to add a new event
+export const addEvent = (event: Omit<CalendarEvent, 'id'>): CalendarEvent => {
+  const newEvent = { ...event, id: uuidv4() };
+  events.push(newEvent);
+  return newEvent;
+};
+
+// Function to update an existing event
+export const updateEvent = (
+  id: string,
+  eventData: Partial<CalendarEvent>
+): CalendarEvent | undefined => {
+  const index = events.findIndex((event) => event.id === id);
+  if (index !== -1) {
+    events[index] = { ...events[index], ...eventData };
+    return events[index];
+  }
   return undefined;
 };
 
+// Function to delete an event
 export const deleteEvent = (id: string): boolean => {
-  const initialLength = mockEvents.length;
-  const newEvents = mockEvents.filter(event => event.id !== id);
-  
-  // If the array length changed, we successfully removed an event
-  if (newEvents.length < initialLength) {
-    // Replace the mockEvents array with the filtered array
-    mockEvents.length = 0;
-    mockEvents.push(...newEvents);
+  const index = events.findIndex((event) => event.id === id);
+  if (index !== -1) {
+    events.splice(index, 1);
     return true;
   }
-  
   return false;
-};
-
-export const addAttendeeToEvent = (
-  eventId: string,
-  attendee: CalendarEvent['attendees'][0]
-): CalendarEvent | undefined => {
-  const event = getEventById(eventId);
-  
-  if (!event) return undefined;
-  
-  // Check if attendee already exists
-  if (!event.attendees.some(a => a.id === attendee.id)) {
-    event.attendees.push(attendee);
-    
-    // Update the event in the mockEvents array
-    const eventIndex = mockEvents.findIndex(e => e.id === eventId);
-    if (eventIndex >= 0) {
-      mockEvents[eventIndex] = event;
-    }
-  }
-  
-  return event;
 };
