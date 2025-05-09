@@ -3,6 +3,7 @@ import React from "react";
 import { format, addHours, startOfDay } from "date-fns";
 import { CalendarDay, CalendarEvent } from "@/types/calendar";
 import EventChip from "./EventChip";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface CalendarDayViewProps {
   day: CalendarDay;
@@ -38,42 +39,44 @@ const CalendarDayView: React.FC<CalendarDayViewProps> = ({
       )}
 
       {/* Time-based events */}
-      <div className="flex-1 overflow-y-auto rounded-md border">
-        {timeSlots.map((hour) => {
-          const timeSlot = addHours(startOfDay(day.date), hour);
-          
-          // Filter events that start in this hour
-          const hourEvents = day.events.filter((event) => {
-            if (event.allDay) return false;
+      <ScrollArea className="flex-1 rounded-md border">
+        <div className="min-h-[800px]">
+          {timeSlots.map((hour) => {
+            const timeSlot = addHours(startOfDay(day.date), hour);
             
-            const eventStart = new Date(event.start);
-            const eventHour = eventStart.getHours();
-            
-            return eventHour === hour;
-          });
+            // Filter events that start in this hour
+            const hourEvents = day.events.filter((event) => {
+              if (event.allDay) return false;
+              
+              const eventStart = new Date(event.start);
+              const eventHour = eventStart.getHours();
+              
+              return eventHour === hour;
+            });
 
-          return (
-            <div
-              key={hour}
-              className="grid grid-cols-[80px_1fr] border-b last:border-b-0"
-            >
-              <div className="border-r p-2 text-sm text-muted-foreground">
-                {hour === 12 ? "12 PM" : hour < 12 ? `${hour} AM` : `${hour - 12} PM`}
+            return (
+              <div
+                key={hour}
+                className="grid grid-cols-[80px_1fr] border-b last:border-b-0"
+              >
+                <div className="border-r p-2 text-sm text-muted-foreground">
+                  {hour === 12 ? "12 PM" : hour < 12 ? `${hour} AM` : `${hour - 12} PM`}
+                </div>
+                <div className="p-1">
+                  {hourEvents.map((event) => (
+                    <EventChip
+                      key={event.id}
+                      event={event}
+                      onClick={() => onEventClick(event)}
+                      showTime
+                    />
+                  ))}
+                </div>
               </div>
-              <div className="p-1">
-                {hourEvents.map((event) => (
-                  <EventChip
-                    key={event.id}
-                    event={event}
-                    onClick={() => onEventClick(event)}
-                    showTime
-                  />
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      </ScrollArea>
     </div>
   );
 };

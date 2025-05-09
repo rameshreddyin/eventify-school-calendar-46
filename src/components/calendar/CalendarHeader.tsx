@@ -12,6 +12,7 @@ interface CalendarHeaderProps {
   onPrevious: () => void;
   onNext: () => void;
   onViewChange: (view: CalendarViewType) => void;
+  onToday: () => void;
 }
 
 const CalendarHeader: React.FC<CalendarHeaderProps> = ({
@@ -21,9 +22,10 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   onPrevious,
   onNext,
   onViewChange,
+  onToday,
 }) => {
   return (
-    <div className="mb-6 flex flex-col space-y-4">
+    <div className="mb-4 flex flex-col space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="calendar-title">{title}</h2>
         <div className="flex items-center space-x-2">
@@ -39,11 +41,7 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              const today = new Date();
-              // You would also need to update your calendar state here
-              // This is just a placeholder
-            }}
+            onClick={onToday}
             className="text-xs"
           >
             Today
@@ -90,7 +88,7 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
           {getDayNames().map((day, index) => (
             <div
               key={day}
-              className="flex h-full items-center justify-center text-sm font-medium"
+              className="flex h-10 items-center justify-center text-sm font-medium"
             >
               {day}
             </div>

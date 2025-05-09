@@ -41,7 +41,7 @@ const CalendarMonthView: React.FC<CalendarMonthViewProps> = ({
           </div>
         </div>
 
-        <div className="mt-1">
+        <div className="mt-1 space-y-1">
           {visibleEvents.map((event) => (
             <EventChip
               key={event.id}
@@ -59,7 +59,7 @@ const CalendarMonthView: React.FC<CalendarMonthViewProps> = ({
               style={{ backgroundColor: "#64748b" }}
               onClick={(e) => {
                 e.stopPropagation();
-                // Handle showing more events
+                onDateClick(date);
               }}
             >
               +{events.length - maxVisibleEvents} more

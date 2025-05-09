@@ -127,6 +127,10 @@ const EventsPage: React.FC = () => {
     }
   };
 
+  const handleToday = () => {
+    setCurrentDate(new Date());
+  };
+
   const calendarMonth = generateCalendarMonth(currentDate, filteredEvents);
   const calendarDays = generateCalendarDays(currentDate, filteredEvents);
   
@@ -221,7 +225,7 @@ const EventsPage: React.FC = () => {
 
   return (
     <MainLayout>
-      <div className="calendar-container p-6 h-full overflow-hidden flex flex-col">
+      <div className="calendar-container p-4 h-full">
         <CalendarToolbar
           onAddEvent={handleAddEvent}
           onSearch={setSearchQuery}
@@ -236,9 +240,10 @@ const EventsPage: React.FC = () => {
           onPrevious={handlePrevious}
           onNext={handleNext}
           onViewChange={setView}
+          onToday={handleToday}
         />
         
-        <div className="calendar-view-container flex-1 overflow-auto">
+        <div className="calendar-view-container">
           {view === "month" && (
             <CalendarMonthView
               calendarMonth={calendarMonth}
