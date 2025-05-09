@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   format,
@@ -220,7 +221,7 @@ const EventsPage: React.FC = () => {
 
   return (
     <MainLayout>
-      <div className="calendar-container p-6">
+      <div className="calendar-container p-6 h-full overflow-hidden flex flex-col">
         <CalendarToolbar
           onAddEvent={handleAddEvent}
           onSearch={setSearchQuery}
@@ -237,7 +238,7 @@ const EventsPage: React.FC = () => {
           onViewChange={setView}
         />
         
-        <div className="calendar-view-container">
+        <div className="calendar-view-container flex-1 overflow-auto">
           {view === "month" && (
             <CalendarMonthView
               calendarMonth={calendarMonth}
