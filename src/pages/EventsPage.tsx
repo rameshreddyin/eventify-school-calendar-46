@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   format,
@@ -29,6 +28,7 @@ import {
   updateEvent,
   deleteEvent,
 } from "@/data/events";
+import { createAttendeesFromNotificationGroups } from "@/utils/eventHelpers";
 import { CalendarEvent, CalendarViewType } from "@/types/calendar";
 import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/hooks/use-toast";
@@ -78,17 +78,14 @@ const EventsPage: React.FC = () => {
   };
 
   const updateFilteredEvents = () => {
-    // Get events for the current view period
     let eventsToShow = events;
     
-    // Apply category filters if any are selected
     if (selectedFilters.length > 0) {
       eventsToShow = eventsToShow.filter(event => 
         selectedFilters.includes(event.category)
       );
     }
     
-    // Apply search query if it exists
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       eventsToShow = eventsToShow.filter(event => 
@@ -101,7 +98,6 @@ const EventsPage: React.FC = () => {
     setFilteredEvents(eventsToShow);
   };
 
-  // Navigation handlers
   const handlePrevious = () => {
     switch (view) {
       case "month":
@@ -130,11 +126,9 @@ const EventsPage: React.FC = () => {
     }
   };
 
-  // Generate calendar data
   const calendarMonth = generateCalendarMonth(currentDate, filteredEvents);
   const calendarDays = generateCalendarDays(currentDate, filteredEvents);
   
-  // Today's events (for day view)
   const todayWithEvents = calendarDays.find(day => 
     isSameDay(day.date, currentDate)
   ) || {
@@ -144,14 +138,12 @@ const EventsPage: React.FC = () => {
     isCurrentMonth: true
   };
 
-  // Event handlers
   const handleAddEvent = () => {
     setSelectedEvent(null);
     setShowEventForm(true);
   };
 
   const handleSubmitEvent = (formData: any) => {
-    // Convert form data to CalendarEvent format
     const eventData: CalendarEvent = {
       id: selectedEvent?.id || uuidv4(),
       title: formData.title,
@@ -164,39 +156,25 @@ const EventsPage: React.FC = () => {
         ? startOfDay(formData.endDate)
         : new Date(`${format(formData.endDate, "yyyy-MM-dd")}T${formData.endTime}`),
       allDay: formData.allDay,
-      location: formData.location || "",
       createdBy: "current-user",
-      isRecurring: formData.isRecurring,
-      recurrencePattern: formData.recurrencePattern,
-      attendees: selectedEvent?.attendees || [],
+      isRecurring: false,
+      attendees: formData.notify && formData.notifyGroups?.length > 0 
+        ? createAttendeesFromNotificationGroups(formData.notifyGroups)
+        : [],
       isApproved: true,
     };
 
-    // If notify attendees is checked, add notification preferences
-    if (formData.notifyAttendees) {
-      eventData.attendees = eventData.attendees.map(attendee => ({
-        ...attendee,
-        notificationPreferences: {
-          email: true,
-          push: true
-        }
-      }));
-    }
-
-    // Save the event
     if (selectedEvent) {
       updateEvent(eventData.id, eventData);
     } else {
       addEvent(eventData);
     }
     
-    // Show toast notification
     toast({
       title: selectedEvent ? "Event updated" : "Event created",
       description: "Your calendar has been updated!"
     });
     
-    // Close the form and update events
     setShowEventForm(false);
     updateFilteredEvents();
   };
@@ -213,20 +191,16 @@ const EventsPage: React.FC = () => {
   };
 
   const handleRSVPEvent = (eventId: string, attendeeId: string, attending: boolean) => {
-    // Get the event first
     const event = getEventById(eventId);
     if (event) {
-      // Find the attendee
       const updatedAttendees = event.attendees.map(attendee => 
         attendee.id === attendeeId
           ? { ...attendee, responded: true, attending }
           : attendee
       );
       
-      // Update the event with the new attendees
       updateEvent(eventId, { attendees: updatedAttendees });
       
-      // Show toast notification
       toast({
         title: attending ? "You're going!" : "You declined",
         description: attending 
@@ -234,7 +208,6 @@ const EventsPage: React.FC = () => {
           : "You've declined this event"
       });
       
-      // Close the details dialog
       setShowEventDetails(false);
       updateFilteredEvents();
     }
@@ -289,7 +262,6 @@ const EventsPage: React.FC = () => {
           )}
         </div>
         
-        {/* Simple Event Form */}
         <EventForm
           isOpen={showEventForm}
           onClose={() => setShowEventForm(false)}
@@ -297,7 +269,6 @@ const EventsPage: React.FC = () => {
           initialEvent={selectedEvent}
         />
         
-        {/* Event Details Dialog */}
         <EventDetailsDialog
           event={selectedEvent}
           isOpen={showEventDetails}

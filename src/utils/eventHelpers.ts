@@ -43,3 +43,44 @@ export const createAttendee = (name: string, role: EventAttendee['role']): Event
     attending: false
   };
 };
+
+/**
+ * Create attendees for notification groups
+ */
+export const createAttendeesFromNotificationGroups = (groups: string[]): EventAttendee[] => {
+  const attendees: EventAttendee[] = [];
+  
+  const addAttendee = (role: EventAttendee['role'], shouldNotify: boolean) => {
+    attendees.push({
+      id: uuidv4(),
+      name: role.charAt(0).toUpperCase() + role.slice(1),
+      role,
+      responded: true,
+      attending: true,
+      ...(shouldNotify ? {
+        notificationPreferences: {
+          email: true,
+          push: true
+        }
+      } : {})
+    });
+  };
+
+  if (groups.includes('all') || groups.includes('parents')) {
+    addAttendee('parent', true);
+  }
+  
+  if (groups.includes('all') || groups.includes('teachers')) {
+    addAttendee('teacher', true);
+  }
+  
+  if (groups.includes('all') || groups.includes('staff')) {
+    addAttendee('staff', true);
+  }
+  
+  if (groups.includes('all') || groups.includes('administration')) {
+    addAttendee('admin', true);
+  }
+  
+  return attendees;
+};

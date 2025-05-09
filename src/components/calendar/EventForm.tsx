@@ -38,6 +38,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { CalendarIcon, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -54,10 +55,8 @@ const formSchema = z.object({
   startTime: z.string().optional(),
   endTime: z.string().optional(),
   allDay: z.boolean().default(false),
-  location: z.string().optional(),
-  isRecurring: z.boolean().default(false),
-  recurrencePattern: z.enum(["daily", "weekly", "monthly", "yearly"]).optional(),
-  notifyAttendees: z.boolean().default(false),
+  notify: z.boolean().default(false),
+  notifyGroups: z.array(z.string()).optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -68,6 +67,14 @@ interface EventFormProps {
   onSubmit: (values: FormValues) => void;
   initialEvent?: CalendarEvent;
 }
+
+const notificationGroups = [
+  { id: "parents", label: "Parents" },
+  { id: "teachers", label: "Teachers" },
+  { id: "staff", label: "All Staff" },
+  { id: "administration", label: "Administration" },
+  { id: "all", label: "Everyone" },
+];
 
 const EventForm: React.FC<EventFormProps> = ({
   isOpen,
@@ -89,10 +96,9 @@ const EventForm: React.FC<EventFormProps> = ({
           startTime: initialEvent.allDay ? undefined : format(new Date(initialEvent.start), "HH:mm"),
           endTime: initialEvent.allDay ? undefined : format(new Date(initialEvent.end), "HH:mm"),
           allDay: initialEvent.allDay,
-          location: initialEvent.location,
-          isRecurring: initialEvent.isRecurring,
-          recurrencePattern: initialEvent.recurrencePattern,
-          notifyAttendees: initialEvent.attendees.some(a => a.notificationPreferences !== undefined),
+          notify: initialEvent.attendees.some(a => a.notificationPreferences !== undefined),
+          notifyGroups: initialEvent.attendees.some(a => a.notificationPreferences !== undefined) ? 
+            ["all"] : undefined,
         }
       : {
           title: "",
@@ -103,15 +109,13 @@ const EventForm: React.FC<EventFormProps> = ({
           startTime: "09:00",
           endTime: "10:00",
           allDay: false,
-          location: "",
-          isRecurring: false,
-          recurrencePattern: undefined,
-          notifyAttendees: false,
+          notify: false,
+          notifyGroups: [],
         },
   });
 
   const allDay = form.watch("allDay");
-  const isRecurring = form.watch("isRecurring");
+  const notify = form.watch("notify");
 
   const handleSubmit = (values: FormValues) => {
     onSubmit(values);
@@ -334,27 +338,13 @@ const EventForm: React.FC<EventFormProps> = ({
 
             <FormField
               control={form.control}
-              name="location"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Location</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Location" {...field} value={field.value || ""} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="isRecurring"
+              name="notify"
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                   <div className="space-y-0.5">
-                    <FormLabel className="text-base">Recurring Event</FormLabel>
+                    <FormLabel className="text-base">Send Notifications</FormLabel>
                     <FormDescription>
-                      This event repeats on a schedule
+                      Notify stakeholders about this event
                     </FormDescription>
                   </div>
                   <FormControl>
@@ -367,55 +357,55 @@ const EventForm: React.FC<EventFormProps> = ({
               )}
             />
 
-            {isRecurring && (
+            {notify && (
               <FormField
                 control={form.control}
-                name="recurrencePattern"
-                render={({ field }) => (
+                name="notifyGroups"
+                render={() => (
                   <FormItem>
-                    <FormLabel>Recurrence Pattern</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a pattern" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="daily">Daily</SelectItem>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                        <SelectItem value="yearly">Yearly</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="mb-4">
+                      <FormLabel className="text-base">Who to Notify</FormLabel>
+                      <FormDescription>
+                        Select which groups should be notified about this event
+                      </FormDescription>
+                    </div>
+                    <div className="space-y-2">
+                      {notificationGroups.map((item) => (
+                        <FormField
+                          key={item.id}
+                          control={form.control}
+                          name="notifyGroups"
+                          render={({ field }) => {
+                            return (
+                              <FormItem
+                                key={item.id}
+                                className="flex flex-row items-start space-x-3 space-y-0"
+                              >
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(item.id)}
+                                    onCheckedChange={(checked) => {
+                                      const updatedValues = checked
+                                        ? [...(field.value || []), item.id]
+                                        : field.value?.filter((value) => value !== item.id) || [];
+                                      field.onChange(updatedValues);
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  {item.label}
+                                </FormLabel>
+                              </FormItem>
+                            );
+                          }}
+                        />
+                      ))}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             )}
-
-            <FormField
-              control={form.control}
-              name="notifyAttendees"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base">Notify Attendees</FormLabel>
-                    <FormDescription>
-                      Send email and push notifications to attendees
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose}>
