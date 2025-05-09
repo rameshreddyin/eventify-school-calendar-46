@@ -55,6 +55,7 @@
   min-height: 100px;
   padding: 0.5rem;
   overflow: hidden;
+  position: relative;
 }
 
 .calendar-cell:nth-child(7n) {
@@ -99,7 +100,7 @@
   color: white;
 }
 
-/* Dialog content scrolling */
+/* Fixing dialog content scrolling */
 .dialog-content-scrollable {
   max-height: 80vh;
   overflow-y: auto;

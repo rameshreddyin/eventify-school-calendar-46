@@ -30,7 +30,7 @@ const CalendarMonthView: React.FC<CalendarMonthViewProps> = ({
         key={date.toISOString()}
         className={`calendar-cell ${isToday ? "today" : ""} ${
           !isCurrentMonth ? "calendar-day-outside" : ""
-        }`}
+        } cursor-pointer hover:bg-muted/50`}
         onClick={() => onDateClick(date)}
       >
         <div className="flex justify-end">
