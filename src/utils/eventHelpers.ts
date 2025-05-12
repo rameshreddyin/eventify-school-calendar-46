@@ -27,20 +27,23 @@ export const createDefaultEvent = (title: string = ''): Partial<CalendarEvent> =
     createdBy: 'current-user',
     isRecurring: false,
     attendees: [],
-    isApproved: false
+    isApproved: false,
+    audienceType: ['teachers'],
+    classIds: []
   };
 };
 
 /**
  * Create a new attendee
  */
-export const createAttendee = (name: string, role: EventAttendee['role']): EventAttendee => {
+export const createAttendee = (name: string, role: EventAttendee['role'], classId?: string): EventAttendee => {
   return {
     id: uuidv4(),
     name,
     role,
     responded: false,
-    attending: false
+    attending: false,
+    ...(classId ? { classId } : {})
   };
 };
 
@@ -82,5 +85,30 @@ export const createAttendeesFromNotificationGroups = (groups: string[]): EventAt
     addAttendee('admin', true);
   }
   
+  if (groups.includes('all') || groups.includes('students')) {
+    addAttendee('student', true);
+  }
+  
   return attendees;
+};
+
+/**
+ * Create class-specific attendees
+ */
+export const createClassSpecificAttendees = (
+  role: EventAttendee['role'], 
+  classIds: string[]
+): EventAttendee[] => {
+  return classIds.map(classId => ({
+    id: uuidv4(),
+    name: `${role.charAt(0).toUpperCase() + role.slice(1)} (${classId})`,
+    role,
+    responded: false,
+    attending: false,
+    classId,
+    notificationPreferences: {
+      email: true,
+      push: true
+    }
+  }));
 };

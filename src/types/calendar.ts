@@ -18,6 +18,7 @@ export interface CalendarEvent {
   attendees: EventAttendee[];
   isApproved: boolean;
   classIds?: string[];
+  audienceType?: string[];
 }
 
 export interface EventAttendee {
@@ -26,6 +27,7 @@ export interface EventAttendee {
   role: "student" | "teacher" | "admin" | "staff" | "parent";
   responded: boolean;
   attending: boolean;
+  classId?: string;
   notificationPreferences?: {
     email: boolean;
     push: boolean;

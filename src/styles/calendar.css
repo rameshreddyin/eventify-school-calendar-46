@@ -105,3 +105,39 @@
   max-height: 80vh;
   overflow-y: auto;
 }
+
+/* Form wizard styling */
+.form-step {
+  transition: all 0.3s ease;
+}
+
+.form-step-active {
+  display: block;
+}
+
+.form-step-inactive {
+  display: none;
+}
+
+.step-indicator {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.step-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: hsl(var(--muted));
+}
+
+.step-dot.active {
+  background-color: hsl(var(--primary));
+}
+
+.step-progress {
+  height: 2px;
+  background-color: hsl(var(--primary));
+  transition: width 0.3s ease;
+}

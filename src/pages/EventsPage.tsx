@@ -149,6 +149,30 @@ const EventsPage: React.FC = () => {
   };
 
   const handleSubmitEvent = (formData: any) => {
+    // Create attendees based on audience type and class selections
+    let attendees: any[] = [];
+    
+    if (formData.notify && formData.notifyGroups?.length > 0) {
+      attendees = createAttendeesFromNotificationGroups(formData.notifyGroups);
+      
+      // Add class information to attendees if classes were selected
+      if (formData.classes && formData.classes.length > 0 && 
+          (formData.audienceType.includes("parents") || formData.audienceType.includes("students"))) {
+        // Add class-specific attendees
+        attendees = attendees.map(attendee => {
+          if (attendee.role === "parent" || attendee.role === "student") {
+            // Just use the first class for simplicity in this example
+            // In a real app, you might create multiple attendees for different classes
+            return {
+              ...attendee,
+              classId: formData.classes[0]
+            };
+          }
+          return attendee;
+        });
+      }
+    }
+    
     const eventData: CalendarEvent = {
       id: selectedEvent?.id || uuidv4(),
       title: formData.title,
@@ -163,10 +187,10 @@ const EventsPage: React.FC = () => {
       allDay: formData.allDay,
       createdBy: "current-user",
       isRecurring: false,
-      attendees: formData.notify && formData.notifyGroups?.length > 0 
-        ? createAttendeesFromNotificationGroups(formData.notifyGroups)
-        : [],
+      attendees: attendees,
       isApproved: true,
+      audienceType: formData.audienceType,
+      classIds: formData.classes,
     };
 
     if (selectedEvent) {
