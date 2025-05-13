@@ -47,14 +47,15 @@ const EventsPage: React.FC = () => {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [showEventDetails, setShowEventDetails] = useState(false);
   
-  // Calculate calendar data based on current date and view
+  // Separate effect for calendar title update to avoid dependencies on filtered events
   useEffect(() => {
     updateCalendarTitle();
   }, [currentDate, view]);
 
+  // Separate effect for filtered events to avoid unnecessary updates
   useEffect(() => {
     updateFilteredEvents();
-  }, [selectedFilters, searchQuery]);
+  }, [selectedFilters, searchQuery, events]);
 
   const updateCalendarTitle = () => {
     switch (view) {

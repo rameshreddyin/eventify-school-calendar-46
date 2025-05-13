@@ -197,21 +197,35 @@ const EventForm: React.FC<EventFormProps> = ({
   
   // Update notification groups when audience type changes
   useEffect(() => {
-    if (selectedAudienceTypes.length > 0) {
-      form.setValue("notifyGroups", [...selectedAudienceTypes]);
+    // Only update if we have audience types selected
+    if (selectedAudienceTypes && selectedAudienceTypes.length > 0) {
+      // Skip the update if the values are already equal
+      const currentNotifyGroups = form.getValues("notifyGroups") || [];
+      const setsAreEqual = 
+        currentNotifyGroups.length === selectedAudienceTypes.length &&
+        selectedAudienceTypes.every(type => currentNotifyGroups.includes(type));
+      
+      if (!setsAreEqual) {
+        form.setValue("notifyGroups", [...selectedAudienceTypes]);
+      }
     }
-  }, [selectedAudienceTypes, form]);
+  }, [selectedAudienceTypes]);
 
   // Set up automatic end time suggestion based on start time
   useEffect(() => {
     const startTime = form.watch("startTime");
-    if (startTime && !form.getValues("endTime")) {
+    // Only update if startTime exists and endTime is not set or empty
+    const endTime = form.getValues("endTime");
+    if (startTime && (!endTime || endTime === "")) {
       // Parse start time to suggest end time (1 hour later)
       const [hours, minutes] = startTime.split(":").map(Number);
       const newHours = hours + 1 > 23 ? 23 : hours + 1;
       form.setValue("endTime", `${newHours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`);
     }
   }, [form.watch("startTime")]);
+
+  // Early return if the form is not open to prevent unnecessary renders
+  if (!isOpen) return null;
 
   const handleNext = async () => {
     let valid = false;

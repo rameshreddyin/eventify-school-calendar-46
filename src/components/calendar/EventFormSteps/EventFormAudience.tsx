@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { UseFormReturn } from "react-hook-form";
 import {
   FormControl,
@@ -44,59 +44,63 @@ const EventFormAudience: React.FC<EventFormAudienceProps> = ({
   // Get selected audience types to determine what nested options to show
   const selectedAudienceTypes = form.watch("audienceType") || [];
   
-  // Filter classes based on search term
+  // Memoize filtered arrays to prevent unnecessary re-renders
   const filteredClasses = schoolClasses.filter(c => 
     c.name.toLowerCase().includes(classSearch.toLowerCase())
   );
   
-  // Filter departments based on search term
   const filteredDepartments = departments.filter(d => 
     d.name.toLowerCase().includes(deptSearch.toLowerCase())
   );
   
-  // Filter subjects based on search term
   const filteredSubjects = subjects.filter(s => 
     s.name.toLowerCase().includes(subjectSearch.toLowerCase())
   );
   
-  // Handle "select all" for classes
-  const handleSelectAllClasses = () => {
+  // Memoize handlers to prevent recreation on each render
+  const handleSelectAllClasses = useCallback(() => {
     const currentClasses = form.getValues("classes") || [];
     if (currentClasses.length === schoolClasses.length) {
       form.setValue("classes", [], { shouldDirty: true });
     } else {
       form.setValue("classes", schoolClasses.map(c => c.id), { shouldDirty: true });
     }
-  };
+  }, [form, schoolClasses]);
   
-  // Handle "select all" for departments
-  const handleSelectAllDepartments = () => {
+  const handleSelectAllDepartments = useCallback(() => {
     const currentDepts = form.getValues("departments") || [];
     if (currentDepts.length === departments.length) {
       form.setValue("departments", [], { shouldDirty: true });
     } else {
       form.setValue("departments", departments.map(d => d.id), { shouldDirty: true });
     }
-  };
+  }, [form, departments]);
   
-  // Handle "select all" for subjects
-  const handleSelectAllSubjects = () => {
+  const handleSelectAllSubjects = useCallback(() => {
     const currentSubjects = form.getValues("subjects") || [];
     if (currentSubjects.length === subjects.length) {
       form.setValue("subjects", [], { shouldDirty: true });
     } else {
       form.setValue("subjects", subjects.map(s => s.id), { shouldDirty: true });
     }
-  };
+  }, [form, subjects]);
   
-  // Handle "select all" audiences
-  const handleSelectAllAudiences = () => {
+  const handleSelectAllAudiences = useCallback(() => {
     if (selectedAudienceTypes.length === audienceTypes.length) {
       form.setValue("audienceType", [], { shouldDirty: true });
     } else {
       form.setValue("audienceType", audienceTypes.map(a => a.id), { shouldDirty: true });
     }
-  };
+  }, [form, selectedAudienceTypes]);
+  
+  // Use a callback for handling checkbox item clicks
+  const handleItemClick = useCallback((fieldName: string, itemId: string, currentValues: string[]) => {
+    const isSelected = currentValues.includes(itemId);
+    const updatedValues = isSelected
+      ? currentValues.filter(value => value !== itemId)
+      : [...currentValues, itemId];
+    form.setValue(fieldName, updatedValues, { shouldDirty: true });
+  }, [form]);
   
   // Determine which panels to show based on selected audience types
   const showParentsPanel = selectedAudienceTypes.includes("parents");
@@ -141,12 +145,7 @@ const EventFormAudience: React.FC<EventFormAudienceProps> = ({
                       return (
                         <div 
                           className={`audience-item ${isSelected ? 'audience-item-selected' : ''}`}
-                          onClick={() => {
-                            const updatedValues = isSelected
-                              ? field.value?.filter((value: string) => value !== item.id) || []
-                              : [...(field.value || []), item.id];
-                            form.setValue("audienceType", updatedValues, { shouldDirty: true });
-                          }}
+                          onClick={() => handleItemClick("audienceType", item.id, field.value || [])}
                         >
                           <FormControl>
                             <div className="flex items-center space-x-2">
@@ -222,12 +221,7 @@ const EventFormAudience: React.FC<EventFormAudienceProps> = ({
                         return (
                           <div 
                             className={`checkbox-item ${isSelected ? 'checkbox-item-selected' : ''}`}
-                            onClick={() => {
-                              const updatedValues = isSelected
-                                ? field.value?.filter((value: string) => value !== classItem.id) || []
-                                : [...(field.value || []), classItem.id];
-                              form.setValue("classes", updatedValues, { shouldDirty: true });
-                            }}
+                            onClick={() => handleItemClick("classes", classItem.id, field.value || [])}
                           >
                             <FormControl>
                               <div className="flex items-center space-x-2">
@@ -307,12 +301,7 @@ const EventFormAudience: React.FC<EventFormAudienceProps> = ({
                         return (
                           <div 
                             className={`checkbox-item ${isSelected ? 'checkbox-item-selected' : ''}`}
-                            onClick={() => {
-                              const updatedValues = isSelected
-                                ? field.value?.filter((value: string) => value !== subject.id) || []
-                                : [...(field.value || []), subject.id];
-                              form.setValue("subjects", updatedValues, { shouldDirty: true });
-                            }}
+                            onClick={() => handleItemClick("subjects", subject.id, field.value || [])}
                           >
                             <FormControl>
                               <div className="flex items-center space-x-2">
@@ -385,12 +374,7 @@ const EventFormAudience: React.FC<EventFormAudienceProps> = ({
                         return (
                           <div 
                             className={`checkbox-item ${isSelected ? 'checkbox-item-selected' : ''}`}
-                            onClick={() => {
-                              const updatedValues = isSelected
-                                ? field.value?.filter((value: string) => value !== dept.id) || []
-                                : [...(field.value || []), dept.id];
-                              form.setValue("departments", updatedValues, { shouldDirty: true });
-                            }}
+                            onClick={() => handleItemClick("departments", dept.id, field.value || [])}
                           >
                             <FormControl>
                               <div className="flex items-center space-x-2">
@@ -464,12 +448,7 @@ const EventFormAudience: React.FC<EventFormAudienceProps> = ({
                         return (
                           <div 
                             className={`checkbox-item ${isSelected ? 'checkbox-item-selected' : ''}`}
-                            onClick={() => {
-                              const updatedValues = isSelected
-                                ? field.value?.filter((value: string) => value !== classItem.id) || []
-                                : [...(field.value || []), classItem.id];
-                              form.setValue("classes", updatedValues, { shouldDirty: true });
-                            }}
+                            onClick={() => handleItemClick("classes", classItem.id, field.value || [])}
                           >
                             <FormControl>
                               <div className="flex items-center space-x-2">
