@@ -1,7 +1,7 @@
 
 export type CalendarViewType = "month" | "week" | "day";
 
-export type EventCategory = "exam" | "holiday" | "meeting" | "sport" | "administrative" | string;
+export type EventCategory = "meeting" | "holiday" | "exam" | "cultural" | "pta" | "announcement" | "sport" | "administrative" | string;
 
 export interface CalendarEvent {
   id: string;
@@ -19,6 +19,15 @@ export interface CalendarEvent {
   isApproved: boolean;
   classIds?: string[];
   audienceType?: string[];
+  showInCalendar?: boolean;
+  sendPushNotification?: boolean;
+  sendEmailAlert?: boolean;
+  reminder?: {
+    time: number;
+    unit: "minutes" | "hours" | "days";
+  };
+  allowRSVP?: boolean;
+  followUpNotification?: boolean;
 }
 
 export interface EventAttendee {
@@ -46,3 +55,20 @@ export interface CalendarMonth {
     days: CalendarDay[];
   }[];
 }
+
+export interface SchoolClass {
+  id: string;
+  name: string;
+  gradeLevel?: string;
+}
+
+export interface SchoolDepartment {
+  id: string;
+  name: string;
+}
+
+export interface SchoolSubject {
+  id: string;
+  name: string;
+}
+

@@ -3,11 +3,11 @@ import React, { useState, useEffect, useMemo } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { format } from "date-fns";
 import { CalendarEvent } from "@/types/calendar";
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogDescription,
@@ -39,40 +39,97 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { format } from "date-fns";
-import { CalendarIcon, Clock, Users, Bell, Bookmark, Tag, BookOpen, School, Calendar as CalendarIcon2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { 
+  CalendarIcon, 
+  Clock, 
+  Users, 
+  Bell, 
+  Bookmark, 
+  Tag, 
+  BookOpen, 
+  School, 
+  Calendar as CalendarIcon2,
+  Check,
+  Search
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+import EventFormBasics from "./EventFormSteps/EventFormBasics";
+import EventFormSchedule from "./EventFormSteps/EventFormSchedule";
+import EventFormAudience from "./EventFormSteps/EventFormAudience";
+import EventFormNotifications from "./EventFormSteps/EventFormNotifications";
 
-// Available school classes
+// Mock data that would typically come from an API
 const schoolClasses = [
-  { id: "class-1", label: "Class 1" },
-  { id: "class-2", label: "Class 2" },
-  { id: "class-3", label: "Class 3" },
-  { id: "class-4", label: "Class 4" },
-  { id: "class-5", label: "Class 5" },
-  { id: "class-6", label: "Class 6" },
+  { id: "class-1", name: "Class 1", gradeLevel: "1st Grade" },
+  { id: "class-2", name: "Class 2", gradeLevel: "1st Grade" },
+  { id: "class-3", name: "Class 3", gradeLevel: "2nd Grade" },
+  { id: "class-4", name: "Class 4", gradeLevel: "2nd Grade" },
+  { id: "class-5", name: "Class 5", gradeLevel: "3rd Grade" },
+  { id: "class-6", name: "Class 6", gradeLevel: "3rd Grade" },
 ];
 
-// Form schema with audience types and class selection
+const departments = [
+  { id: "dept-1", name: "Administration" },
+  { id: "dept-2", name: "Teaching Faculty" },
+  { id: "dept-3", name: "Support Staff" },
+  { id: "dept-4", name: "Maintenance" },
+  { id: "dept-5", name: "IT Department" },
+];
+
+const subjects = [
+  { id: "subj-1", name: "Mathematics" },
+  { id: "subj-2", name: "Science" },
+  { id: "subj-3", name: "English" },
+  { id: "subj-4", name: "History" },
+  { id: "subj-5", name: "Geography" },
+  { id: "subj-6", name: "Art" },
+  { id: "subj-7", name: "Music" },
+  { id: "subj-8", name: "Physical Education" },
+];
+
+// Form schema with all required fields and validations
 const formSchema = z.object({
-  title: z.string().min(2, {
-    message: "Title must be at least 2 characters.",
+  // Step 1: Basics
+  title: z.string().min(3, {
+    message: "Title must be at least 3 characters.",
   }),
   description: z.string().optional(),
-  category: z.string(),
-  startDate: z.date(),
-  endDate: z.date(),
+  category: z.string({
+    required_error: "Please select an event type.",
+  }),
+
+  // Step 2: Schedule
+  allDay: z.boolean().default(false),
+  startDate: z.date({
+    required_error: "Start date is required.",
+  }),
+  endDate: z.date({
+    required_error: "End date is required.",
+  }),
   startTime: z.string().optional(),
   endTime: z.string().optional(),
-  allDay: z.boolean().default(false),
+
+  // Step 3: Audience
   audienceType: z.array(z.string()).min(1, {
     message: "Please select at least one audience type",
   }),
   classes: z.array(z.string()).optional(),
-  notify: z.boolean().default(false),
+  departments: z.array(z.string()).optional(),
+  subjects: z.array(z.string()).optional(),
+
+  // Step 4: Notifications
+  sendPushNotification: z.boolean().default(false),
+  sendEmailAlert: z.boolean().default(false),
+  showInCalendar: z.boolean().default(true),
   notifyGroups: z.array(z.string()).optional(),
+  reminderEnabled: z.boolean().default(false),
+  reminderTime: z.number().optional(),
+  reminderUnit: z.enum(["minutes", "hours", "days"]).optional(),
+  followUpNotification: z.boolean().default(false),
+  allowRSVP: z.boolean().default(false),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -84,30 +141,6 @@ interface EventFormProps {
   initialEvent?: CalendarEvent;
 }
 
-const audienceTypes = [
-  { id: "parents", label: "Parents", icon: <Users size={16} /> },
-  { id: "teachers", label: "Teachers", icon: <BookOpen size={16} /> },
-  { id: "staff", label: "Staff", icon: <Users size={16} /> },
-  { id: "students", label: "Students", icon: <School size={16} /> },
-  { id: "administration", label: "Administration", icon: <Users size={16} /> },
-];
-
-const notificationGroups = [
-  { id: "parents", label: "Parents", icon: <Users size={16} /> },
-  { id: "teachers", label: "Teachers", icon: <BookOpen size={16} /> },
-  { id: "staff", label: "All Staff", icon: <Users size={16} /> },
-  { id: "administration", label: "Administration", icon: <Users size={16} /> },
-  { id: "all", label: "Everyone", icon: <Users size={16} /> },
-];
-
-const categoryColors: Record<string, string> = {
-  exam: "bg-red-500",
-  holiday: "bg-green-500",
-  meeting: "bg-blue-500",
-  sport: "bg-orange-500",
-  administrative: "bg-purple-500",
-};
-
 const EventForm: React.FC<EventFormProps> = ({
   isOpen,
   onClose,
@@ -118,51 +151,77 @@ const EventForm: React.FC<EventFormProps> = ({
   
   // Track steps in the form wizard
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 3;
+  const totalSteps = 4;
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: initialEvent
       ? {
+          // Map initial event values if editing
           title: initialEvent.title,
           description: initialEvent.description,
           category: initialEvent.category,
+          allDay: initialEvent.allDay,
           startDate: new Date(initialEvent.start),
           endDate: new Date(initialEvent.end),
           startTime: initialEvent.allDay ? undefined : format(new Date(initialEvent.start), "HH:mm"),
           endTime: initialEvent.allDay ? undefined : format(new Date(initialEvent.end), "HH:mm"),
-          allDay: initialEvent.allDay,
           audienceType: initialEvent.audienceType || ["teachers"],
           classes: initialEvent.classIds || [],
-          notify: initialEvent.attendees.some(a => a.notificationPreferences !== undefined),
-          notifyGroups: initialEvent.attendees.some(a => a.notificationPreferences !== undefined) ? 
-            ["all"] : [],
+          departments: [],
+          subjects: [],
+          sendPushNotification: initialEvent.sendPushNotification || false,
+          sendEmailAlert: initialEvent.sendEmailAlert || false,
+          showInCalendar: initialEvent.showInCalendar !== false,
+          notifyGroups: initialEvent.audienceType || [],
+          reminderEnabled: !!initialEvent.reminder,
+          reminderTime: initialEvent.reminder?.time,
+          reminderUnit: initialEvent.reminder?.unit,
+          followUpNotification: initialEvent.followUpNotification || false,
+          allowRSVP: initialEvent.allowRSVP || false,
         }
       : {
+          // Default values for a new event
           title: "",
           description: "",
           category: "meeting",
+          allDay: false,
           startDate: new Date(),
           endDate: new Date(),
           startTime: "09:00",
           endTime: "10:00",
-          allDay: false,
           audienceType: ["teachers"],
           classes: [],
-          notify: true,
+          departments: [],
+          subjects: [],
+          sendPushNotification: false,
+          sendEmailAlert: true,
+          showInCalendar: true,
           notifyGroups: ["teachers"],
+          reminderEnabled: false,
+          reminderTime: 30,
+          reminderUnit: "minutes",
+          followUpNotification: false,
+          allowRSVP: true,
         },
   });
 
+  // Watch values for conditional logic
   const allDay = form.watch("allDay");
-  const notify = form.watch("notify");
   const selectedAudienceTypes = form.watch("audienceType") || [];
   const selectedCategory = form.watch("category");
-  
+  const reminderEnabled = form.watch("reminderEnabled");
+
   // Progress calculation for step indicator
   const progressPercentage = useMemo(() => {
     return ((currentStep - 1) / (totalSteps - 1)) * 100;
   }, [currentStep, totalSteps]);
+  
+  // Calculate if we should show various audience selection panels
+  const showParentsPanel = selectedAudienceTypes.includes("parents");
+  const showTeachersPanel = selectedAudienceTypes.includes("teachers");
+  const showStudentsPanel = selectedAudienceTypes.includes("students");
+  const showStaffPanel = selectedAudienceTypes.includes("staff");
   
   // Update notification groups when audience type changes
   useEffect(() => {
@@ -170,6 +229,17 @@ const EventForm: React.FC<EventFormProps> = ({
       form.setValue("notifyGroups", [...selectedAudienceTypes]);
     }
   }, [selectedAudienceTypes, form]);
+
+  // Set up automatic end time suggestion based on start time
+  useEffect(() => {
+    const startTime = form.watch("startTime");
+    if (startTime && !form.getValues("endTime")) {
+      // Parse start time to suggest end time (1 hour later)
+      const [hours, minutes] = startTime.split(":").map(Number);
+      const newHours = hours + 1 > 23 ? 23 : hours + 1;
+      form.setValue("endTime", `${newHours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`);
+    }
+  }, [form.watch("startTime")]);
 
   const handleNext = async () => {
     let valid = false;
@@ -180,50 +250,112 @@ const EventForm: React.FC<EventFormProps> = ({
     } else if (currentStep === 2) {
       const result = await form.trigger(["startDate", "endDate", "startTime", "endTime", "allDay"]);
       valid = result;
+    } else if (currentStep === 3) {
+      const result = await form.trigger(["audienceType"]);
+      valid = result;
+    } else {
+      valid = true;
     }
     
     if (valid && currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
+      // Smooth scroll to top when changing steps
+      document.querySelector('.dialog-content')?.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
     }
   };
 
   const handleBack = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
+      // Smooth scroll to top when changing steps
+      document.querySelector('.dialog-content')?.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
     }
   };
 
   const handleSubmit = (values: FormValues) => {
+    // Validate time inputs if not an all-day event
+    if (!values.allDay) {
+      if (!values.startTime || !values.endTime) {
+        toast({
+          title: "Missing time information",
+          description: "Please specify both start and end times for this event.",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     onSubmit(values);
     form.reset();
     setCurrentStep(1);
+    
+    toast({
+      title: initialEvent ? "Event updated" : "Event created",
+      description: initialEvent 
+        ? "Your event has been successfully updated." 
+        : "Your event has been successfully created.",
+    });
   };
-  
-  // Check if parents are selected as audience to show class options
-  const shouldShowClassOptions = selectedAudienceTypes.includes("parents") || 
-                                 selectedAudienceTypes.includes("students");
 
+  // Step titles and descriptions
+  const stepInfo = [
+    {
+      title: "Create New Event",
+      description: "Start by giving your event a name and description."
+    },
+    {
+      title: "When is this event happening?",
+      description: "Set the date, time and duration for your event."
+    },
+    {
+      title: "Who is this event for?",
+      description: "Select the target audience for this event."
+    },
+    {
+      title: "Notify your audience",
+      description: "Configure notifications and visibility settings."
+    },
+  ];
+
+  // Event type options
+  const eventTypes = [
+    { value: "meeting", label: "Meeting" },
+    { value: "holiday", label: "Holiday" },
+    { value: "exam", label: "Exam" },
+    { value: "cultural", label: "Cultural Program" },
+    { value: "pta", label: "PTA Meeting" },
+    { value: "announcement", label: "Announcement" },
+    { value: "sport", label: "Sports Event" },
+    { value: "administrative", label: "Administrative" },
+  ];
+  
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] p-0 flex flex-col">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] p-0 flex flex-col dialog-content">
         <DialogHeader className="p-6 pb-4 border-b sticky top-0 bg-background z-10">
           <DialogTitle className="text-xl font-bold">
-            {initialEvent ? "Edit Event" : "Create Event"}
+            {stepInfo[currentStep-1].title}
           </DialogTitle>
-          <DialogDescription>
-            Complete all details to create your event
+          <DialogDescription className="text-base">
+            {stepInfo[currentStep-1].description}
           </DialogDescription>
           
           <div className="step-indicator mt-6">
             <div className="step-progress" style={{ width: `${progressPercentage}%` }}></div>
             
             {Array.from({ length: totalSteps }).map((_, index) => (
-              <div key={index} className={`relative ${index+1 === currentStep ? "step-active" : ""}`}>
+              <div key={index} className="relative">
                 <div className={`step-dot ${index + 1 === currentStep ? "active" : ""} ${index + 1 < currentStep ? "completed" : ""}`}>
-                  {index + 1 < currentStep ? "" : index + 1}
+                  {index + 1 < currentStep ? <Check className="h-4 w-4" /> : index + 1}
                 </div>
                 <span className="step-label">
-                  {index === 0 ? "Details" : index === 1 ? "Schedule" : "Audience"}
+                  {index === 0 ? "Basics" : index === 1 ? "Schedule" : index === 2 ? "Audience" : "Notifications"}
                 </span>
               </div>
             ))}
@@ -232,468 +364,70 @@ const EventForm: React.FC<EventFormProps> = ({
 
         <Form {...form}>
           <form className="space-y-0 flex-1 flex flex-col">
-            <ScrollArea className="flex-1" style={{maxHeight: "calc(70vh - 140px)"}}>
-              <div className="p-6">
+            <ScrollArea className="flex-1 p-0 h-full overflow-auto">
+              <div className="p-6 space-y-6">
                 {currentStep === 1 && (
-                  <div className="space-y-5">
-                    <div className="form-section">
-                      <div className="form-section-title">
-                        <Bookmark size={18} />
-                        <span>Basic Information</span>
-                      </div>
-                      
-                      <FormField
-                        control={form.control}
-                        name="title"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Event Title</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter event title" {...field} className="bg-background" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="description"
-                        render={({ field }) => (
-                          <FormItem className="mt-4">
-                            <FormLabel>Description</FormLabel>
-                            <FormControl>
-                              <Textarea
-                                placeholder="Enter event description"
-                                className="resize-none bg-background min-h-[100px]"
-                                {...field}
-                                value={field.value || ""}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div className="form-section">
-                      <div className="form-section-title">
-                        <Tag size={18} />
-                        <span>Event Category</span>
-                      </div>
-                      <FormField
-                        control={form.control}
-                        name="category"
-                        render={({ field }) => (
-                          <FormItem>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                              {Object.entries({
-                                exam: { label: "Exam", color: "bg-red-500" },
-                                holiday: { label: "Holiday", color: "bg-green-500" },
-                                meeting: { label: "Meeting", color: "bg-blue-500" },
-                                sport: { label: "Sports & Cultural", color: "bg-orange-500" },
-                                administrative: { label: "Administrative", color: "bg-purple-500" }
-                              }).map(([value, { label, color }]) => (
-                                <FormItem key={value} className="flex flex-col items-center space-x-0 space-y-0">
-                                  <FormControl>
-                                    <div
-                                      className={`
-                                        relative h-full w-full rounded-md p-4 text-center cursor-pointer transition-all
-                                        border-2 flex flex-col items-center justify-center gap-2
-                                        ${field.value === value ? 'border-primary bg-primary/10' : 'border-muted bg-background hover:bg-accent'}
-                                      `}
-                                      onClick={() => field.onChange(value)}
-                                    >
-                                      <div className={`w-4 h-4 rounded-full ${color}`}></div>
-                                      <span className="text-sm font-medium">{label}</span>
-                                    </div>
-                                  </FormControl>
-                                </FormItem>
-                              ))}
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
+                  <EventFormBasics 
+                    form={form} 
+                    eventTypes={eventTypes}
+                  />
                 )}
                 
                 {currentStep === 2 && (
-                  <div className="space-y-5">
-                    <div className="form-section">
-                      <div className="form-section-title">
-                        <CalendarIcon2 size={18} />
-                        <span>Event Timing</span>
-                      </div>
-                      <FormField
-                        control={form.control}
-                        name="allDay"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 mb-4">
-                            <div className="space-y-0.5">
-                              <FormLabel className="text-base">All Day</FormLabel>
-                              <FormDescription>
-                                Event will last the entire day
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="startDate"
-                          render={({ field }) => (
-                            <FormItem className="flex flex-col">
-                              <FormLabel>Start Date</FormLabel>
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <FormControl>
-                                    <Button
-                                      variant={"outline"}
-                                      className={`w-full pl-3 text-left font-normal ${
-                                        !field.value ? "text-muted-foreground" : ""
-                                      }`}
-                                    >
-                                      {field.value ? (
-                                        format(field.value, "PPP")
-                                      ) : (
-                                        <span>Pick a date</span>
-                                      )}
-                                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                    </Button>
-                                  </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                  <Calendar
-                                    mode="single"
-                                    selected={field.value}
-                                    onSelect={field.onChange}
-                                    initialFocus
-                                  />
-                                </PopoverContent>
-                              </Popover>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="endDate"
-                          render={({ field }) => (
-                            <FormItem className="flex flex-col">
-                              <FormLabel>End Date</FormLabel>
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <FormControl>
-                                    <Button
-                                      variant={"outline"}
-                                      className={`w-full pl-3 text-left font-normal ${
-                                        !field.value ? "text-muted-foreground" : ""
-                                      }`}
-                                    >
-                                      {field.value ? (
-                                        format(field.value, "PPP")
-                                      ) : (
-                                        <span>Pick a date</span>
-                                      )}
-                                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                    </Button>
-                                  </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                  <Calendar
-                                    mode="single"
-                                    selected={field.value}
-                                    onSelect={field.onChange}
-                                    initialFocus
-                                  />
-                                </PopoverContent>
-                              </Popover>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
-                      {!allDay && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-                          <FormField
-                            control={form.control}
-                            name="startTime"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Start Time</FormLabel>
-                                <div className="flex items-center">
-                                  <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
-                                  <FormControl>
-                                    <Input type="time" {...field} value={field.value || ""} className="bg-background" />
-                                  </FormControl>
-                                </div>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="endTime"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>End Time</FormLabel>
-                                <div className="flex items-center">
-                                  <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
-                                  <FormControl>
-                                    <Input type="time" {...field} value={field.value || ""} className="bg-background" />
-                                  </FormControl>
-                                </div>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <EventFormSchedule 
+                    form={form}
+                  />
                 )}
 
                 {currentStep === 3 && (
-                  <div className="space-y-5">
-                    <div className="form-section">
-                      <div className="form-section-title">
-                        <Users size={18} />
-                        <span>Event Audience</span>
-                      </div>
-                      
-                      <FormField
-                        control={form.control}
-                        name="audienceType"
-                        render={() => (
-                          <FormItem>
-                            <FormLabel className="text-base mb-3 block">Who is this event for?</FormLabel>
-                            <div className="checkbox-grid">
-                              {audienceTypes.map((item) => (
-                                <FormField
-                                  key={item.id}
-                                  control={form.control}
-                                  name="audienceType"
-                                  render={({ field }) => {
-                                    const isSelected = field.value?.includes(item.id);
-                                    return (
-                                      <div 
-                                        className={`checkbox-item ${isSelected ? 'checkbox-item-selected' : ''}`}
-                                        onClick={() => {
-                                          const updatedValues = isSelected
-                                            ? field.value?.filter((value) => value !== item.id) || []
-                                            : [...(field.value || []), item.id];
-                                          field.onChange(updatedValues);
-                                        }}
-                                      >
-                                        <label className="checkbox-label w-full cursor-pointer">
-                                          <FormControl>
-                                            <Checkbox
-                                              checked={isSelected}
-                                              onCheckedChange={() => {}}
-                                              className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                                            />
-                                          </FormControl>
-                                          <div className="flex items-center gap-1.5">
-                                            {item.icon}
-                                            <span>{item.label}</span>
-                                          </div>
-                                        </label>
-                                      </div>
-                                    );
-                                  }}
-                                />
-                              ))}
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    
-                    {shouldShowClassOptions && (
-                      <div className="form-section">
-                        <div className="form-section-title">
-                          <School size={18} />
-                          <span>Class Selection</span>
-                        </div>
-                        
-                        <FormField
-                          control={form.control}
-                          name="classes"
-                          render={() => (
-                            <FormItem>
-                              <FormLabel className="text-base mb-3 block">
-                                Select specific classes
-                              </FormLabel>
-                              <div className="checkbox-grid">
-                                {schoolClasses.map((classItem) => (
-                                  <FormField
-                                    key={classItem.id}
-                                    control={form.control}
-                                    name="classes"
-                                    render={({ field }) => {
-                                      const isSelected = field.value?.includes(classItem.id);
-                                      return (
-                                        <div 
-                                          className={`checkbox-item ${isSelected ? 'checkbox-item-selected' : ''}`}
-                                          onClick={() => {
-                                            const updatedValues = isSelected
-                                              ? field.value?.filter((value) => value !== classItem.id) || []
-                                              : [...(field.value || []), classItem.id];
-                                            field.onChange(updatedValues);
-                                          }}
-                                        >
-                                          <label className="checkbox-label w-full cursor-pointer">
-                                            <FormControl>
-                                              <Checkbox
-                                                checked={isSelected}
-                                                onCheckedChange={() => {}}
-                                                className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                                              />
-                                            </FormControl>
-                                            <span>{classItem.label}</span>
-                                          </label>
-                                        </div>
-                                      );
-                                    }}
-                                  />
-                                ))}
-                              </div>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    )}
+                  <EventFormAudience
+                    form={form}
+                    schoolClasses={schoolClasses}
+                    departments={departments}
+                    subjects={subjects}
+                  />
+                )}
 
-                    <div className="form-section">
-                      <div className="form-section-title">
-                        <Bell size={18} />
-                        <span>Notifications</span>
-                      </div>
-                      
-                      <FormField
-                        control={form.control}
-                        name="notify"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 mb-4">
-                            <div className="space-y-0.5">
-                              <FormLabel className="text-base">Send Notifications</FormLabel>
-                              <FormDescription>
-                                Notify stakeholders about this event
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-
-                      {notify && (
-                        <FormField
-                          control={form.control}
-                          name="notifyGroups"
-                          render={() => (
-                            <FormItem>
-                              <FormLabel className="text-base mb-3 block">Who should be notified?</FormLabel>
-                              <div className="checkbox-grid">
-                                {notificationGroups.map((item) => (
-                                  <FormField
-                                    key={item.id}
-                                    control={form.control}
-                                    name="notifyGroups"
-                                    render={({ field }) => {
-                                      const isSelected = field.value?.includes(item.id);
-                                      return (
-                                        <div 
-                                          className={`checkbox-item ${isSelected ? 'checkbox-item-selected' : ''}`}
-                                          onClick={() => {
-                                            const updatedValues = isSelected
-                                              ? field.value?.filter((value) => value !== item.id) || []
-                                              : [...(field.value || []), item.id];
-                                            field.onChange(updatedValues);
-                                          }}
-                                        >
-                                          <label className="checkbox-label w-full cursor-pointer">
-                                            <FormControl>
-                                              <Checkbox
-                                                checked={isSelected}
-                                                onCheckedChange={() => {}}
-                                                className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                                              />
-                                            </FormControl>
-                                            <div className="flex items-center gap-1.5">
-                                              {item.icon}
-                                              <span>{item.label}</span>
-                                            </div>
-                                          </label>
-                                        </div>
-                                      );
-                                    }}
-                                  />
-                                ))}
-                              </div>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      )}
-                    </div>
-                  </div>
+                {currentStep === 4 && (
+                  <EventFormNotifications
+                    form={form}
+                    selectedAudienceTypes={selectedAudienceTypes}
+                  />
                 )}
               </div>
             </ScrollArea>
 
-            <DialogFooter className="p-6 pt-4 border-t sticky bottom-0 bg-background z-10">
-              <div className="flex justify-between w-full items-center">
-                <div>
-                  {currentStep > 1 && (
-                    <Button type="button" variant="outline" onClick={handleBack}>
-                      Back
-                    </Button>
-                  )}
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button type="button" variant="outline" onClick={onClose}>
-                    Cancel
+            <div className="p-6 pt-4 border-t sticky bottom-0 bg-background z-10 flex justify-between w-full">
+              <div>
+                {currentStep > 1 && (
+                  <Button type="button" variant="outline" onClick={handleBack}>
+                    Previous
                   </Button>
-                  
-                  {currentStep < totalSteps && (
-                    <Button type="button" onClick={handleNext}>
-                      Next
-                    </Button>
-                  )}
-                  
-                  {currentStep === totalSteps && (
-                    <Button 
-                      type="button" 
-                      onClick={form.handleSubmit(handleSubmit)}
-                      className={`${selectedCategory ? categoryColors[selectedCategory] : 'bg-primary'} text-white hover:opacity-90`}
-                    >
-                      Save Event
-                    </Button>
-                  )}
-                </div>
+                )}
               </div>
-            </DialogFooter>
+              
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={onClose}>
+                  Cancel
+                </Button>
+                
+                {currentStep < totalSteps && (
+                  <Button type="button" onClick={handleNext}>
+                    Next
+                  </Button>
+                )}
+                
+                {currentStep === totalSteps && (
+                  <Button 
+                    type="button" 
+                    onClick={form.handleSubmit(handleSubmit)}
+                    className="bg-gray-900 text-white hover:bg-gray-800"
+                  >
+                    Create Event
+                  </Button>
+                )}
+              </div>
+            </div>
           </form>
         </Form>
       </DialogContent>

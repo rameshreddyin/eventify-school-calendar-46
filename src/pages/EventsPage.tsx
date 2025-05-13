@@ -149,41 +149,60 @@ const EventsPage: React.FC = () => {
   };
 
   const handleSubmitEvent = (formData: any) => {
-    // Create attendees based on audience type and class selections
+    // Create attendees based on audience type and notification settings
     let attendees: any[] = [];
     
-    if (formData.notify && formData.notifyGroups?.length > 0) {
+    if ((formData.sendPushNotification || formData.sendEmailAlert) && formData.notifyGroups?.length > 0) {
       attendees = createAttendeesFromNotificationGroups(formData.notifyGroups);
+      
+      // Add notification preferences
+      attendees = attendees.map(attendee => ({
+        ...attendee,
+        notificationPreferences: {
+          email: formData.sendEmailAlert,
+          push: formData.sendPushNotification
+        }
+      }));
       
       // Add class information to attendees if classes were selected
       if (formData.classes && formData.classes.length > 0 && 
           (formData.audienceType.includes("parents") || formData.audienceType.includes("students"))) {
-        // Add class-specific attendees
-        attendees = attendees.map(attendee => {
-          if (attendee.role === "parent" || attendee.role === "student") {
-            // Just use the first class for simplicity in this example
-            // In a real app, you might create multiple attendees for different classes
-            return {
-              ...attendee,
-              classId: formData.classes[0]
-            };
-          }
-          return attendee;
-        });
+        attendees = attendees.filter(a => a.role === "parent" || a.role === "student").map(attendee => ({
+          ...attendee,
+          // Assign the first class for simplicity
+          classId: formData.classes[0]
+        }));
       }
     }
+    
+    // Convert form start/end times into Date objects if not an all-day event
+    let startDateTime = formData.startDate;
+    let endDateTime = formData.endDate;
+    
+    if (!formData.allDay && formData.startTime && formData.endTime) {
+      const [startHours, startMinutes] = formData.startTime.split(':').map(Number);
+      const [endHours, endMinutes] = formData.endTime.split(':').map(Number);
+      
+      startDateTime = new Date(formData.startDate);
+      startDateTime.setHours(startHours, startMinutes, 0);
+      
+      endDateTime = new Date(formData.endDate);
+      endDateTime.setHours(endHours, endMinutes, 0);
+    }
+    
+    // Build reminder object if enabled
+    const reminder = formData.reminderEnabled ? {
+      time: formData.reminderTime,
+      unit: formData.reminderUnit
+    } : undefined;
     
     const eventData: CalendarEvent = {
       id: selectedEvent?.id || uuidv4(),
       title: formData.title,
       description: formData.description || "",
       category: formData.category,
-      start: formData.allDay 
-        ? startOfDay(formData.startDate)
-        : new Date(`${format(formData.startDate, "yyyy-MM-dd")}T${formData.startTime}`),
-      end: formData.allDay
-        ? startOfDay(formData.endDate)
-        : new Date(`${format(formData.endDate, "yyyy-MM-dd")}T${formData.endTime}`),
+      start: startDateTime,
+      end: endDateTime,
       allDay: formData.allDay,
       createdBy: "current-user",
       isRecurring: false,
@@ -191,6 +210,12 @@ const EventsPage: React.FC = () => {
       isApproved: true,
       audienceType: formData.audienceType,
       classIds: formData.classes,
+      showInCalendar: formData.showInCalendar,
+      sendPushNotification: formData.sendPushNotification,
+      sendEmailAlert: formData.sendEmailAlert,
+      reminder: reminder,
+      allowRSVP: formData.allowRSVP,
+      followUpNotification: formData.followUpNotification,
     };
 
     if (selectedEvent) {
@@ -198,11 +223,6 @@ const EventsPage: React.FC = () => {
     } else {
       addEvent(eventData);
     }
-    
-    toast({
-      title: selectedEvent ? "Event updated" : "Event created",
-      description: "Your calendar has been updated!"
-    });
     
     setShowEventForm(false);
     updateFilteredEvents();
