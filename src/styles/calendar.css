@@ -238,29 +238,6 @@
   font-weight: 500;
 }
 
-/* Dialog content scrolling and responsive design */
-.dialog-content-scrollable {
-  max-height: 80vh;
-  overflow-y: auto;
-  padding-right: 0.5rem;
-}
-
-@media (max-width: 640px) {
-  .checkbox-grid {
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  }
-}
-
-@media (max-width: 480px) {
-  .checkbox-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  
-  .form-section {
-    padding: 1rem;
-  }
-}
-
 /* Enhanced visual feedback */
 .event-chip:hover {
   filter: brightness(1.1);
@@ -282,21 +259,38 @@
   transform: scale(1.1);
 }
 
-/* Improving the dialog scrolling experience */
-.dialog-content-scrollable::-webkit-scrollbar {
-  width: 6px;
+/* Mobile responsiveness */
+@media (max-width: 640px) {
+  .checkbox-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+  
+  .form-section {
+    padding: 1rem;
+  }
+  
+  .step-label {
+    font-size: 0.7rem;
+  }
 }
 
-.dialog-content-scrollable::-webkit-scrollbar-track {
-  background: hsl(var(--muted));
-  border-radius: 10px;
-}
-
-.dialog-content-scrollable::-webkit-scrollbar-thumb {
-  background: hsl(var(--border));
-  border-radius: 10px;
-}
-
-.dialog-content-scrollable::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--primary) / 0.5);
+@media (max-width: 480px) {
+  .checkbox-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .form-section {
+    padding: 0.75rem;
+  }
+  
+  .step-indicator {
+    margin-bottom: 2rem;
+  }
+  
+  .step-label {
+    white-space: normal;
+    text-align: center;
+    width: 60px;
+    top: 30px;
+  }
 }

@@ -205,8 +205,8 @@ const EventForm: React.FC<EventFormProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader className="pb-4 border-b">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] p-0 flex flex-col">
+        <DialogHeader className="p-6 pb-4 border-b sticky top-0 bg-background z-10">
           <DialogTitle className="text-xl font-bold">
             {initialEvent ? "Edit Event" : "Create Event"}
           </DialogTitle>
@@ -231,9 +231,9 @@ const EventForm: React.FC<EventFormProps> = ({
         </DialogHeader>
 
         <Form {...form}>
-          <form className="space-y-6 flex-1 flex flex-col">
-            <ScrollArea className="flex-1 px-1 py-4" style={{height: "calc(65vh - 80px)"}}>
-              <div className="pr-4">
+          <form className="space-y-0 flex-1 flex flex-col">
+            <ScrollArea className="flex-1" style={{maxHeight: "calc(70vh - 140px)"}}>
+              <div className="p-6">
                 {currentStep === 1 && (
                   <div className="space-y-5">
                     <div className="form-section">
@@ -661,35 +661,37 @@ const EventForm: React.FC<EventFormProps> = ({
               </div>
             </ScrollArea>
 
-            <DialogFooter className="pt-4 border-t flex justify-between items-center sticky bottom-0 bg-background z-10">
-              <div>
-                {currentStep > 1 && (
-                  <Button type="button" variant="outline" onClick={handleBack}>
-                    Back
-                  </Button>
-                )}
-              </div>
-              
-              <div className="flex gap-2">
-                <Button type="button" variant="outline" onClick={onClose}>
-                  Cancel
-                </Button>
+            <DialogFooter className="p-6 pt-4 border-t sticky bottom-0 bg-background z-10">
+              <div className="flex justify-between w-full items-center">
+                <div>
+                  {currentStep > 1 && (
+                    <Button type="button" variant="outline" onClick={handleBack}>
+                      Back
+                    </Button>
+                  )}
+                </div>
                 
-                {currentStep < totalSteps && (
-                  <Button type="button" onClick={handleNext}>
-                    Next
+                <div className="flex gap-2">
+                  <Button type="button" variant="outline" onClick={onClose}>
+                    Cancel
                   </Button>
-                )}
-                
-                {currentStep === totalSteps && (
-                  <Button 
-                    type="button" 
-                    onClick={form.handleSubmit(handleSubmit)}
-                    className={`${selectedCategory ? categoryColors[selectedCategory] : 'bg-primary'} text-white hover:opacity-90`}
-                  >
-                    Save Event
-                  </Button>
-                )}
+                  
+                  {currentStep < totalSteps && (
+                    <Button type="button" onClick={handleNext}>
+                      Next
+                    </Button>
+                  )}
+                  
+                  {currentStep === totalSteps && (
+                    <Button 
+                      type="button" 
+                      onClick={form.handleSubmit(handleSubmit)}
+                      className={`${selectedCategory ? categoryColors[selectedCategory] : 'bg-primary'} text-white hover:opacity-90`}
+                    >
+                      Save Event
+                    </Button>
+                  )}
+                </div>
               </div>
             </DialogFooter>
           </form>
