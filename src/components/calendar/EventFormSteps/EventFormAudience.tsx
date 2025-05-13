@@ -11,7 +11,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Users, School, BookOpen, Search, Check } from "lucide-react";
+import { Users, School, BookOpen, Search } from "lucide-react";
 import { SchoolClass, SchoolDepartment, SchoolSubject } from "@/types/calendar";
 
 interface EventFormAudienceProps {
@@ -44,11 +44,6 @@ const EventFormAudience: React.FC<EventFormAudienceProps> = ({
   // Get selected audience types to determine what nested options to show
   const selectedAudienceTypes = form.watch("audienceType") || [];
   
-  const showParentsPanel = selectedAudienceTypes.includes("parents");
-  const showTeachersPanel = selectedAudienceTypes.includes("teachers");
-  const showStudentsPanel = selectedAudienceTypes.includes("students");
-  const showStaffPanel = selectedAudienceTypes.includes("staff");
-  
   // Filter classes based on search term
   const filteredClasses = schoolClasses.filter(c => 
     c.name.toLowerCase().includes(classSearch.toLowerCase())
@@ -68,9 +63,9 @@ const EventFormAudience: React.FC<EventFormAudienceProps> = ({
   const handleSelectAllClasses = () => {
     const currentClasses = form.getValues("classes") || [];
     if (currentClasses.length === schoolClasses.length) {
-      form.setValue("classes", []);
+      form.setValue("classes", [], { shouldDirty: true });
     } else {
-      form.setValue("classes", schoolClasses.map(c => c.id));
+      form.setValue("classes", schoolClasses.map(c => c.id), { shouldDirty: true });
     }
   };
   
@@ -78,9 +73,9 @@ const EventFormAudience: React.FC<EventFormAudienceProps> = ({
   const handleSelectAllDepartments = () => {
     const currentDepts = form.getValues("departments") || [];
     if (currentDepts.length === departments.length) {
-      form.setValue("departments", []);
+      form.setValue("departments", [], { shouldDirty: true });
     } else {
-      form.setValue("departments", departments.map(d => d.id));
+      form.setValue("departments", departments.map(d => d.id), { shouldDirty: true });
     }
   };
   
@@ -88,20 +83,26 @@ const EventFormAudience: React.FC<EventFormAudienceProps> = ({
   const handleSelectAllSubjects = () => {
     const currentSubjects = form.getValues("subjects") || [];
     if (currentSubjects.length === subjects.length) {
-      form.setValue("subjects", []);
+      form.setValue("subjects", [], { shouldDirty: true });
     } else {
-      form.setValue("subjects", subjects.map(s => s.id));
+      form.setValue("subjects", subjects.map(s => s.id), { shouldDirty: true });
     }
   };
   
   // Handle "select all" audiences
   const handleSelectAllAudiences = () => {
     if (selectedAudienceTypes.length === audienceTypes.length) {
-      form.setValue("audienceType", []);
+      form.setValue("audienceType", [], { shouldDirty: true });
     } else {
-      form.setValue("audienceType", audienceTypes.map(a => a.id));
+      form.setValue("audienceType", audienceTypes.map(a => a.id), { shouldDirty: true });
     }
   };
+  
+  // Determine which panels to show based on selected audience types
+  const showParentsPanel = selectedAudienceTypes.includes("parents");
+  const showTeachersPanel = selectedAudienceTypes.includes("teachers");
+  const showStudentsPanel = selectedAudienceTypes.includes("students");
+  const showStaffPanel = selectedAudienceTypes.includes("staff");
   
   return (
     <div className="space-y-6 animate-fade-in">
@@ -144,7 +145,7 @@ const EventFormAudience: React.FC<EventFormAudienceProps> = ({
                             const updatedValues = isSelected
                               ? field.value?.filter((value: string) => value !== item.id) || []
                               : [...(field.value || []), item.id];
-                            field.onChange(updatedValues);
+                            form.setValue("audienceType", updatedValues, { shouldDirty: true });
                           }}
                         >
                           <FormControl>
@@ -225,7 +226,7 @@ const EventFormAudience: React.FC<EventFormAudienceProps> = ({
                               const updatedValues = isSelected
                                 ? field.value?.filter((value: string) => value !== classItem.id) || []
                                 : [...(field.value || []), classItem.id];
-                              field.onChange(updatedValues);
+                              form.setValue("classes", updatedValues, { shouldDirty: true });
                             }}
                           >
                             <FormControl>
@@ -310,7 +311,7 @@ const EventFormAudience: React.FC<EventFormAudienceProps> = ({
                               const updatedValues = isSelected
                                 ? field.value?.filter((value: string) => value !== subject.id) || []
                                 : [...(field.value || []), subject.id];
-                              field.onChange(updatedValues);
+                              form.setValue("subjects", updatedValues, { shouldDirty: true });
                             }}
                           >
                             <FormControl>
@@ -388,7 +389,7 @@ const EventFormAudience: React.FC<EventFormAudienceProps> = ({
                               const updatedValues = isSelected
                                 ? field.value?.filter((value: string) => value !== dept.id) || []
                                 : [...(field.value || []), dept.id];
-                              field.onChange(updatedValues);
+                              form.setValue("departments", updatedValues, { shouldDirty: true });
                             }}
                           >
                             <FormControl>
@@ -467,7 +468,7 @@ const EventFormAudience: React.FC<EventFormAudienceProps> = ({
                               const updatedValues = isSelected
                                 ? field.value?.filter((value: string) => value !== classItem.id) || []
                                 : [...(field.value || []), classItem.id];
-                              field.onChange(updatedValues);
+                              form.setValue("classes", updatedValues, { shouldDirty: true });
                             }}
                           >
                             <FormControl>

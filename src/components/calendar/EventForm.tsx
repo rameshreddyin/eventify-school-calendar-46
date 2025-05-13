@@ -22,40 +22,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { 
-  CalendarIcon, 
-  Clock, 
-  Users, 
-  Bell, 
-  Bookmark, 
-  Tag, 
-  BookOpen, 
-  School, 
-  Calendar as CalendarIcon2,
   Check,
-  Search
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
 import EventFormBasics from "./EventFormSteps/EventFormBasics";
 import EventFormSchedule from "./EventFormSteps/EventFormSchedule";
 import EventFormAudience from "./EventFormSteps/EventFormAudience";
@@ -334,6 +306,8 @@ const EventForm: React.FC<EventFormProps> = ({
     { value: "sport", label: "Sports Event" },
     { value: "administrative", label: "Administrative" },
   ];
+  
+  if (!isOpen) return null;
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

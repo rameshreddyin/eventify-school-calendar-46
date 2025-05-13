@@ -50,8 +50,11 @@ const EventsPage: React.FC = () => {
   // Calculate calendar data based on current date and view
   useEffect(() => {
     updateCalendarTitle();
+  }, [currentDate, view]);
+
+  useEffect(() => {
     updateFilteredEvents();
-  }, [currentDate, view, selectedFilters, searchQuery]);
+  }, [selectedFilters, searchQuery]);
 
   const updateCalendarTitle = () => {
     switch (view) {
