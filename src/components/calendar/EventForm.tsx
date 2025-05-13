@@ -205,7 +205,7 @@ const EventForm: React.FC<EventFormProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader className="pb-4 border-b">
           <DialogTitle className="text-xl font-bold">
             {initialEvent ? "Edit Event" : "Create Event"}
@@ -230,345 +230,85 @@ const EventForm: React.FC<EventFormProps> = ({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4 h-[60vh] py-4">
-          <Form {...form}>
-            <form className="space-y-6">
-              {currentStep === 1 && (
-                <div className="space-y-5">
-                  <div className="form-section">
-                    <div className="form-section-title">
-                      <Bookmark size={18} />
-                      <span>Basic Information</span>
-                    </div>
-                    
-                    <FormField
-                      control={form.control}
-                      name="title"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Event Title</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter event title" {...field} className="bg-background" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem className="mt-4">
-                          <FormLabel>Description</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Enter event description"
-                              className="resize-none bg-background min-h-[100px]"
-                              {...field}
-                              value={field.value || ""}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="form-section">
-                    <div className="form-section-title">
-                      <Tag size={18} />
-                      <span>Event Category</span>
-                    </div>
-                    <FormField
-                      control={form.control}
-                      name="category"
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                            {Object.entries({
-                              exam: { label: "Exam", color: "bg-red-500" },
-                              holiday: { label: "Holiday", color: "bg-green-500" },
-                              meeting: { label: "Meeting", color: "bg-blue-500" },
-                              sport: { label: "Sports & Cultural", color: "bg-orange-500" },
-                              administrative: { label: "Administrative", color: "bg-purple-500" }
-                            }).map(([value, { label, color }]) => (
-                              <FormItem key={value} className="flex flex-col items-center space-x-0 space-y-0">
-                                <FormControl>
-                                  <div
-                                    className={`
-                                      relative h-full w-full rounded-md p-4 text-center cursor-pointer transition-all
-                                      border-2 flex flex-col items-center justify-center gap-2
-                                      ${field.value === value ? 'border-primary bg-primary/10' : 'border-muted bg-background hover:bg-accent'}
-                                    `}
-                                    onClick={() => field.onChange(value)}
-                                  >
-                                    <div className={`w-4 h-4 rounded-full ${color}`}></div>
-                                    <span className="text-sm font-medium">{label}</span>
-                                  </div>
-                                </FormControl>
-                              </FormItem>
-                            ))}
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-              )}
-              
-              {currentStep === 2 && (
-                <div className="space-y-5">
-                  <div className="form-section">
-                    <div className="form-section-title">
-                      <CalendarIcon2 size={18} />
-                      <span>Event Timing</span>
-                    </div>
-                    <FormField
-                      control={form.control}
-                      name="allDay"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 mb-4">
-                          <div className="space-y-0.5">
-                            <FormLabel className="text-base">All Day</FormLabel>
-                            <FormDescription>
-                              Event will last the entire day
-                            </FormDescription>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="startDate"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-col">
-                            <FormLabel>Start Date</FormLabel>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button
-                                    variant={"outline"}
-                                    className={`w-full pl-3 text-left font-normal ${
-                                      !field.value ? "text-muted-foreground" : ""
-                                    }`}
-                                  >
-                                    {field.value ? (
-                                      format(field.value, "PPP")
-                                    ) : (
-                                      <span>Pick a date</span>
-                                    )}
-                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                  </Button>
-                                </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                  mode="single"
-                                  selected={field.value}
-                                  onSelect={field.onChange}
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="endDate"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-col">
-                            <FormLabel>End Date</FormLabel>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button
-                                    variant={"outline"}
-                                    className={`w-full pl-3 text-left font-normal ${
-                                      !field.value ? "text-muted-foreground" : ""
-                                    }`}
-                                  >
-                                    {field.value ? (
-                                      format(field.value, "PPP")
-                                    ) : (
-                                      <span>Pick a date</span>
-                                    )}
-                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                  </Button>
-                                </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                  mode="single"
-                                  selected={field.value}
-                                  onSelect={field.onChange}
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    {!allDay && (
-                      <div className="grid grid-cols-2 gap-4 mt-4">
-                        <FormField
-                          control={form.control}
-                          name="startTime"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Start Time</FormLabel>
-                              <div className="flex items-center">
-                                <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
-                                <FormControl>
-                                  <Input type="time" {...field} value={field.value || ""} className="bg-background" />
-                                </FormControl>
-                              </div>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="endTime"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>End Time</FormLabel>
-                              <div className="flex items-center">
-                                <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
-                                <FormControl>
-                                  <Input type="time" {...field} value={field.value || ""} className="bg-background" />
-                                </FormControl>
-                              </div>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {currentStep === 3 && (
-                <div className="space-y-5">
-                  <div className="form-section">
-                    <div className="form-section-title">
-                      <Users size={18} />
-                      <span>Event Audience</span>
-                    </div>
-                    
-                    <FormField
-                      control={form.control}
-                      name="audienceType"
-                      render={() => (
-                        <FormItem>
-                          <FormLabel className="text-base mb-3 block">Who is this event for?</FormLabel>
-                          <div className="checkbox-grid">
-                            {audienceTypes.map((item) => (
-                              <FormField
-                                key={item.id}
-                                control={form.control}
-                                name="audienceType"
-                                render={({ field }) => {
-                                  const isSelected = field.value?.includes(item.id);
-                                  return (
-                                    <div 
-                                      className={`checkbox-item ${isSelected ? 'checkbox-item-selected' : ''}`}
-                                      onClick={() => {
-                                        const updatedValues = isSelected
-                                          ? field.value?.filter((value) => value !== item.id) || []
-                                          : [...(field.value || []), item.id];
-                                        field.onChange(updatedValues);
-                                      }}
-                                    >
-                                      <label className="checkbox-label w-full cursor-pointer">
-                                        <FormControl>
-                                          <Checkbox
-                                            checked={isSelected}
-                                            onCheckedChange={() => {}}
-                                            className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                                          />
-                                        </FormControl>
-                                        <div className="flex items-center gap-1.5">
-                                          {item.icon}
-                                          <span>{item.label}</span>
-                                        </div>
-                                      </label>
-                                    </div>
-                                  );
-                                }}
-                              />
-                            ))}
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  {shouldShowClassOptions && (
+        <Form {...form}>
+          <form className="space-y-6 flex-1 flex flex-col">
+            <ScrollArea className="flex-1 px-1 py-4" style={{height: "calc(65vh - 80px)"}}>
+              <div className="pr-4">
+                {currentStep === 1 && (
+                  <div className="space-y-5">
                     <div className="form-section">
                       <div className="form-section-title">
-                        <School size={18} />
-                        <span>Class Selection</span>
+                        <Bookmark size={18} />
+                        <span>Basic Information</span>
                       </div>
                       
                       <FormField
                         control={form.control}
-                        name="classes"
-                        render={() => (
+                        name="title"
+                        render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-base mb-3 block">
-                              Select specific classes to include
-                            </FormLabel>
-                            <div className="checkbox-grid">
-                              {schoolClasses.map((classItem) => (
-                                <FormField
-                                  key={classItem.id}
-                                  control={form.control}
-                                  name="classes"
-                                  render={({ field }) => {
-                                    const isSelected = field.value?.includes(classItem.id);
-                                    return (
-                                      <div 
-                                        className={`checkbox-item ${isSelected ? 'checkbox-item-selected' : ''}`}
-                                        onClick={() => {
-                                          const updatedValues = isSelected
-                                            ? field.value?.filter((value) => value !== classItem.id) || []
-                                            : [...(field.value || []), classItem.id];
-                                          field.onChange(updatedValues);
-                                        }}
-                                      >
-                                        <label className="checkbox-label w-full cursor-pointer">
-                                          <FormControl>
-                                            <Checkbox
-                                              checked={isSelected}
-                                              onCheckedChange={() => {}}
-                                              className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                                            />
-                                          </FormControl>
-                                          <span>{classItem.label}</span>
-                                        </label>
-                                      </div>
-                                    );
-                                  }}
-                                />
+                            <FormLabel>Event Title</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Enter event title" {...field} className="bg-background" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="description"
+                        render={({ field }) => (
+                          <FormItem className="mt-4">
+                            <FormLabel>Description</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Enter event description"
+                                className="resize-none bg-background min-h-[100px]"
+                                {...field}
+                                value={field.value || ""}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="form-section">
+                      <div className="form-section-title">
+                        <Tag size={18} />
+                        <span>Event Category</span>
+                      </div>
+                      <FormField
+                        control={form.control}
+                        name="category"
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                              {Object.entries({
+                                exam: { label: "Exam", color: "bg-red-500" },
+                                holiday: { label: "Holiday", color: "bg-green-500" },
+                                meeting: { label: "Meeting", color: "bg-blue-500" },
+                                sport: { label: "Sports & Cultural", color: "bg-orange-500" },
+                                administrative: { label: "Administrative", color: "bg-purple-500" }
+                              }).map(([value, { label, color }]) => (
+                                <FormItem key={value} className="flex flex-col items-center space-x-0 space-y-0">
+                                  <FormControl>
+                                    <div
+                                      className={`
+                                        relative h-full w-full rounded-md p-4 text-center cursor-pointer transition-all
+                                        border-2 flex flex-col items-center justify-center gap-2
+                                        ${field.value === value ? 'border-primary bg-primary/10' : 'border-muted bg-background hover:bg-accent'}
+                                      `}
+                                      onClick={() => field.onChange(value)}
+                                    >
+                                      <div className={`w-4 h-4 rounded-full ${color}`}></div>
+                                      <span className="text-sm font-medium">{label}</span>
+                                    </div>
+                                  </FormControl>
+                                </FormItem>
                               ))}
                             </div>
                             <FormMessage />
@@ -576,48 +316,176 @@ const EventForm: React.FC<EventFormProps> = ({
                         )}
                       />
                     </div>
-                  )}
-
-                  <div className="form-section">
-                    <div className="form-section-title">
-                      <Bell size={18} />
-                      <span>Notifications</span>
-                    </div>
-                    
-                    <FormField
-                      control={form.control}
-                      name="notify"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 mb-4">
-                          <div className="space-y-0.5">
-                            <FormLabel className="text-base">Send Notifications</FormLabel>
-                            <FormDescription>
-                              Notify stakeholders about this event
-                            </FormDescription>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-
-                    {notify && (
+                  </div>
+                )}
+                
+                {currentStep === 2 && (
+                  <div className="space-y-5">
+                    <div className="form-section">
+                      <div className="form-section-title">
+                        <CalendarIcon2 size={18} />
+                        <span>Event Timing</span>
+                      </div>
                       <FormField
                         control={form.control}
-                        name="notifyGroups"
+                        name="allDay"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 mb-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">All Day</FormLabel>
+                              <FormDescription>
+                                Event will last the entire day
+                              </FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="startDate"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <FormLabel>Start Date</FormLabel>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant={"outline"}
+                                      className={`w-full pl-3 text-left font-normal ${
+                                        !field.value ? "text-muted-foreground" : ""
+                                      }`}
+                                    >
+                                      {field.value ? (
+                                        format(field.value, "PPP")
+                                      ) : (
+                                        <span>Pick a date</span>
+                                      )}
+                                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    initialFocus
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="endDate"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <FormLabel>End Date</FormLabel>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant={"outline"}
+                                      className={`w-full pl-3 text-left font-normal ${
+                                        !field.value ? "text-muted-foreground" : ""
+                                      }`}
+                                    >
+                                      {field.value ? (
+                                        format(field.value, "PPP")
+                                      ) : (
+                                        <span>Pick a date</span>
+                                      )}
+                                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    initialFocus
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      {!allDay && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                          <FormField
+                            control={form.control}
+                            name="startTime"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Start Time</FormLabel>
+                                <div className="flex items-center">
+                                  <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                                  <FormControl>
+                                    <Input type="time" {...field} value={field.value || ""} className="bg-background" />
+                                  </FormControl>
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="endTime"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>End Time</FormLabel>
+                                <div className="flex items-center">
+                                  <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                                  <FormControl>
+                                    <Input type="time" {...field} value={field.value || ""} className="bg-background" />
+                                  </FormControl>
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {currentStep === 3 && (
+                  <div className="space-y-5">
+                    <div className="form-section">
+                      <div className="form-section-title">
+                        <Users size={18} />
+                        <span>Event Audience</span>
+                      </div>
+                      
+                      <FormField
+                        control={form.control}
+                        name="audienceType"
                         render={() => (
                           <FormItem>
-                            <FormLabel className="text-base mb-3 block">Who should be notified?</FormLabel>
+                            <FormLabel className="text-base mb-3 block">Who is this event for?</FormLabel>
                             <div className="checkbox-grid">
-                              {notificationGroups.map((item) => (
+                              {audienceTypes.map((item) => (
                                 <FormField
                                   key={item.id}
                                   control={form.control}
-                                  name="notifyGroups"
+                                  name="audienceType"
                                   render={({ field }) => {
                                     const isSelected = field.value?.includes(item.id);
                                     return (
@@ -653,45 +521,179 @@ const EventForm: React.FC<EventFormProps> = ({
                           </FormItem>
                         )}
                       />
+                    </div>
+                    
+                    {shouldShowClassOptions && (
+                      <div className="form-section">
+                        <div className="form-section-title">
+                          <School size={18} />
+                          <span>Class Selection</span>
+                        </div>
+                        
+                        <FormField
+                          control={form.control}
+                          name="classes"
+                          render={() => (
+                            <FormItem>
+                              <FormLabel className="text-base mb-3 block">
+                                Select specific classes
+                              </FormLabel>
+                              <div className="checkbox-grid">
+                                {schoolClasses.map((classItem) => (
+                                  <FormField
+                                    key={classItem.id}
+                                    control={form.control}
+                                    name="classes"
+                                    render={({ field }) => {
+                                      const isSelected = field.value?.includes(classItem.id);
+                                      return (
+                                        <div 
+                                          className={`checkbox-item ${isSelected ? 'checkbox-item-selected' : ''}`}
+                                          onClick={() => {
+                                            const updatedValues = isSelected
+                                              ? field.value?.filter((value) => value !== classItem.id) || []
+                                              : [...(field.value || []), classItem.id];
+                                            field.onChange(updatedValues);
+                                          }}
+                                        >
+                                          <label className="checkbox-label w-full cursor-pointer">
+                                            <FormControl>
+                                              <Checkbox
+                                                checked={isSelected}
+                                                onCheckedChange={() => {}}
+                                                className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                              />
+                                            </FormControl>
+                                            <span>{classItem.label}</span>
+                                          </label>
+                                        </div>
+                                      );
+                                    }}
+                                  />
+                                ))}
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     )}
-                  </div>
-                </div>
-              )}
-            </form>
-          </Form>
-        </ScrollArea>
 
-        <DialogFooter className="mt-6 pt-4 border-t flex justify-between items-center">
-          <div>
-            {currentStep > 1 && (
-              <Button type="button" variant="outline" onClick={handleBack}>
-                Back
-              </Button>
-            )}
-          </div>
-          
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            
-            {currentStep < totalSteps && (
-              <Button type="button" onClick={handleNext}>
-                Next
-              </Button>
-            )}
-            
-            {currentStep === totalSteps && (
-              <Button 
-                type="button" 
-                onClick={form.handleSubmit(handleSubmit)}
-                className={`${selectedCategory ? categoryColors[selectedCategory] : 'bg-primary'} text-white hover:opacity-90`}
-              >
-                Save Event
-              </Button>
-            )}
-          </div>
-        </DialogFooter>
+                    <div className="form-section">
+                      <div className="form-section-title">
+                        <Bell size={18} />
+                        <span>Notifications</span>
+                      </div>
+                      
+                      <FormField
+                        control={form.control}
+                        name="notify"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 mb-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">Send Notifications</FormLabel>
+                              <FormDescription>
+                                Notify stakeholders about this event
+                              </FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      {notify && (
+                        <FormField
+                          control={form.control}
+                          name="notifyGroups"
+                          render={() => (
+                            <FormItem>
+                              <FormLabel className="text-base mb-3 block">Who should be notified?</FormLabel>
+                              <div className="checkbox-grid">
+                                {notificationGroups.map((item) => (
+                                  <FormField
+                                    key={item.id}
+                                    control={form.control}
+                                    name="notifyGroups"
+                                    render={({ field }) => {
+                                      const isSelected = field.value?.includes(item.id);
+                                      return (
+                                        <div 
+                                          className={`checkbox-item ${isSelected ? 'checkbox-item-selected' : ''}`}
+                                          onClick={() => {
+                                            const updatedValues = isSelected
+                                              ? field.value?.filter((value) => value !== item.id) || []
+                                              : [...(field.value || []), item.id];
+                                            field.onChange(updatedValues);
+                                          }}
+                                        >
+                                          <label className="checkbox-label w-full cursor-pointer">
+                                            <FormControl>
+                                              <Checkbox
+                                                checked={isSelected}
+                                                onCheckedChange={() => {}}
+                                                className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                              />
+                                            </FormControl>
+                                            <div className="flex items-center gap-1.5">
+                                              {item.icon}
+                                              <span>{item.label}</span>
+                                            </div>
+                                          </label>
+                                        </div>
+                                      );
+                                    }}
+                                  />
+                                ))}
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+
+            <DialogFooter className="pt-4 border-t flex justify-between items-center sticky bottom-0 bg-background z-10">
+              <div>
+                {currentStep > 1 && (
+                  <Button type="button" variant="outline" onClick={handleBack}>
+                    Back
+                  </Button>
+                )}
+              </div>
+              
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={onClose}>
+                  Cancel
+                </Button>
+                
+                {currentStep < totalSteps && (
+                  <Button type="button" onClick={handleNext}>
+                    Next
+                  </Button>
+                )}
+                
+                {currentStep === totalSteps && (
+                  <Button 
+                    type="button" 
+                    onClick={form.handleSubmit(handleSubmit)}
+                    className={`${selectedCategory ? categoryColors[selectedCategory] : 'bg-primary'} text-white hover:opacity-90`}
+                  >
+                    Save Event
+                  </Button>
+                )}
+              </div>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
